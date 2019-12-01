@@ -59,7 +59,10 @@
 	*/
 	#define CPU_MAP_NAME "CPU_MAP_DEFAULT - Demo Only No I/O!"	
 	
-	#define CONTROL_FEED_HOLD_PIN     GPIO_NUM_21  // Uno A1 
+	#define SPINDLE_PWM_PIN    	GPIO_NUM_2
+	#define SPINDLE_PWM_CHANNEL 0
+	#define SPINDLE_PWM_BIT_PRECISION 8
+
 	
 	#define LIMIT_MASK 0  // no limit pins		
 #endif
@@ -119,7 +122,7 @@
 	
 	
 	#define SPINDLE_PWM_CHANNEL 0
-	#define SPINDLE_PWM_BIT_PRECISION 8	
+	#define SPINDLE_PWM_BIT_PRECISION 8
 	#define SPINDLE_ENABLE_PIN	GPIO_NUM_22
 	
 	// see versions for X and Z
@@ -1199,8 +1202,13 @@
 #endif
 
 #ifdef CPU_MAP_ATARI_1020
-	#include "atari_1020.h"	
+	#include "atari_1020.h"
 #endif
+
+#ifdef CPU_MAP_MIDTBOT2
+	#include "midtbot.h"
+#endif
+
 
 	// ================= common to all machines ================================
 	
