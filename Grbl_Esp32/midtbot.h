@@ -22,8 +22,9 @@
 
 #define CPU_MAP_NAME "CPU_MAP_MIDTBOT_KIN"
 
+#define COREXY
+
 #define USE_KINEMATICS
-#define FWD_KINEMATICS_REPORTING
 
 #define USE_RMT_STEPS
 
@@ -62,14 +63,13 @@
 #ifdef HOMING_CYCLE_1
     #undef HOMING_CYCLE_1
 #endif
-//#define HOMING_CYCLE_1 (1<<X_AXIS)
+#define HOMING_CYCLE_1 (1<<X_AXIS)
+
 #ifdef HOMING_CYCLE_2
     #undef HOMING_CYCLE_2
 #endif
         
 #define SERVO_PEN_PIN 					GPIO_NUM_27
-
-
 
 // defaults
 #define DEFAULT_STEP_PULSE_MICROSECONDS 3 
@@ -121,8 +121,7 @@
 #ifndef midtbot_h
     #define midtbot_h
     #include "grbl.h"
-    void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *position);
-    void forward_kinematics(float *position);
+    void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *position);   
     bool kinematics_homing(uint8_t cycle_mask);
 
 #endif 
