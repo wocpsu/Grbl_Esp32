@@ -93,3 +93,7 @@
 	#include "grbl_unipolar.h"
 #endif
 
+#ifdef USE_DYNAMIXEL
+  #include "grbl_dynamixel.h"
+#endif
+
