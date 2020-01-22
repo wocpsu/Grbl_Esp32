@@ -116,6 +116,19 @@
 
 // ======== sPINDLE STUFF ====================
 
+#ifndef  DEFAULT_SPINDLE_RPM_MAX
+	#define DEFAULT_SPINDLE_RPM_MAX 1000.0 // $30 rpm
+#endif
+
+
+#ifndef  DEFAULT_SPINDLE_RPM_MIN
+	#define DEFAULT_SPINDLE_RPM_MIN 0.0 //  $31 rpm
+#endif
+
+#ifndef  DEFAULT_LASER_MODE
+	#define DEFAULT_LASER_MODE 0 // $32 false
+#endif
+
 #ifndef DEFAULT_SPINDLE_FREQ
 	#define DEFAULT_SPINDLE_FREQ 5000.0 // $33 Hz (extended set)
 #endif
@@ -132,18 +145,49 @@
 	#define DEFAULT_SPINDLE_MAX_VALUE 100.0 // $36 Percent (extended set)
 #endif
 
-#ifndef  DEFAULT_SPINDLE_RPM_MAX
-	#define DEFAULT_SPINDLE_RPM_MAX 1000.0 // rpm
+// user settings
+#ifndef DEFAULT_USER_INT_80
+	#define DEFAULT_USER_INT_80 0 // $80 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_INT_81
+	#define DEFAULT_USER_INT_81 0 // $81 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_INT_82
+	#define DEFAULT_USER_INT_82 0 // $82 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_INT_83
+	#define DEFAULT_USER_INT_83 0 // $83 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_INT_84
+	#define DEFAULT_USER_INT_84 0 // $84 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_FLOAT_90
+	#define DEFAULT_USER_FLOAT_90 0.0 // $90 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_FLOAT_91
+	#define DEFAULT_USER_FLOAT_91 0.0 // $92 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_FLOAT_92
+	#define DEFAULT_USER_FLOAT_92 0.0 // $92 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_FLOAT_93
+	#define DEFAULT_USER_FLOAT_93 0.0 // $93 Uner integer setting
+#endif
+
+#ifndef DEFAULT_USER_FLOAT_94
+	#define DEFAULT_USER_FLOAT_94 0.0 // $94 Uner integer setting
 #endif
 
 
-#ifndef  DEFAULT_SPINDLE_RPM_MIN
-	#define DEFAULT_SPINDLE_RPM_MIN 0.0 // rpm
-#endif
 
-#ifndef  DEFAULT_LASER_MODE
-	#define DEFAULT_LASER_MODE 0 // false
-#endif
 
 
 // =========== 	AXIS RESOLUTION ======

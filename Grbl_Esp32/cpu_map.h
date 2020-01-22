@@ -1086,6 +1086,10 @@
 	#include "dxl_delta.h"
 #endif
 
+#ifdef CPU_MAP_CHEETAH
+	#include "hk_cheetah.h"
+#endif
+
 	// ================= common to all machines ================================
 	
 	// These are some ESP32 CPU Settings that the program needs, but are generally not changed

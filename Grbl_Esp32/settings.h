@@ -122,7 +122,7 @@ typedef struct {
   uint16_t homing_debounce_delay;
   float homing_pulloff;
 
-  int16_t machine_int16[USER_SETTING_COUNT]; // settings starting at 80 to be defined by the user
+  uint16_t machine_int16[USER_SETTING_COUNT]; // settings starting at 80 to be defined by the user
   float machine_float[USER_SETTING_COUNT];    // settings starting at 80 to be defined by the user
 
 } settings_t;
