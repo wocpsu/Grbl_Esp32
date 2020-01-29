@@ -52,7 +52,9 @@ bool cheetah_torque_enable_state = false; // is the motor enabled?
 
 uint16_t cheetah_startup_delay; // give time for all features to get ready
 
-uint16_t cheetah_idle_counter;
+uint16_t cheetah_idle_counter = CHEETAH_IDLE_TIMER;
+
+uint8_t cheetah_idle_mode; 
 
  void machine_init()
 {
@@ -124,8 +126,8 @@ void onCanReceive(int packetSize) {
   cheetah_vel = (can_msg[3] << 4) + ((can_msg[4] & 0xF0) >> 4);
   cheetah_current = ((can_msg[4] & 0x0F) << 8) + can_msg[5];
   
-  //grbl_sendf(CLIENT_SERIAL, "[MSG:Cheetah Pos %d]\r\n", cheetah_pos);
-	//return;
+  //grbl_sendf(CLIENT_SERIAL, "[MSG:Cheetah Pos %05d]\r", cheetah_pos);
+	
   
   
   
@@ -146,16 +148,45 @@ void cheetah_sync_position() {
 	if (stepper_idle == cheetah_torque_enable_state) { // they are opposites, so if they are equal change...
 		if (!stepper_idle)
 			cheetahMotorMode(MOTOR_ON);
-		//else
-			//cheetah_idle_counter = CHEETAH_IDLE_TIMER;
+		else
+			cheetah_idle_counter = CHEETAH_IDLE_TIMER; // begin vounting down to motor turn off
 		
-		//grbl_sendf(CLIENT_SERIAL, "[MSG:Cheetah Mode %d]\r\n", cheetah_torque_enable_state);
-		
+		cheetah_torque_enable_state = !stepper_idle; 
 	}
 	
 	if (stepper_idle) {
-		// read the position and update grbl
-		cheetahMotorMode(MOTOR_OFF); // a way to get a response
+		if (cheetah_idle_counter > 0) { // don't disable the torque until counter is done.
+			cheetah_idle_counter--;
+			return;
+		}		
+		cheetah_idle_mode = settings.machine_int16[CHEETAH_SETTING_IDLE_MODE];
+		uint16_t target_pos = sys_position[X_AXIS];
+		switch(cheetah_idle_mode) {
+			case CHEETAH_IDLE_NONE:  //0
+				// don't do anything
+			break;
+			case CHEETAH_IDLE_FREE: // 1
+				cheetahMotorMode(MOTOR_OFF); // a way to get a response
+			break;
+			case CHEETAH_IDLE_FRICTION:	// 2
+				hk_sendMoveCmd(	CHEETAH_ID,
+						0, 0,
+						0,
+						settings.machine_int16[1] / 5, // velocity gain only
+						0);
+			break;
+			case CHEETAH_IDLE_SPRING:
+				hk_sendMoveCmd(	CHEETAH_ID,
+					target_pos, 0,
+					0,
+					0,
+					settings.machine_int16[2] / 5); // feed forware gain only
+			break;
+			default:
+				cheetahMotorMode(MOTOR_OFF); // a way to get a response
+			break;		
+		}
+		
 	}
 	else {
 		// determine where the motor should be and send the move command
@@ -171,6 +202,9 @@ void cheetah_sync_position() {
 
 void hk_sendMoveCmd(uint8_t id, uint16_t new_pos, uint16_t new_vel, uint16_t new_kp, uint16_t new_kd, uint16_t new_ff)
 {
+	
+  //grbl_sendf(CLIENT_SERIAL, "[MSG:Cheetah move %05d]\r\n", new_pos);
+	
   char can_msg[8];
 
   can_msg[0] = (new_pos & 0xFF00) >> 8;
