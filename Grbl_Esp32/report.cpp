@@ -103,6 +103,32 @@ void grbl_sendf(uint8_t client, const char *format, ...)
         delete[] temp;
     }
 }
+// Use to send [MSG:xxxx] Type messages. The level allows messages to be easily suppressed
+void grbl_msg_sendf(uint8_t client, uint8_t level, const char *format, ...) {
+	if (client == CLIENT_INPUT) return;	
+	if (level > GRBL_MSG_LEVEL) return;
+	
+    char loc_buf[64];
+    char * temp = loc_buf;
+    va_list arg;
+    va_list copy;
+    va_start(arg, format);
+    va_copy(copy, arg);
+    size_t len = vsnprintf(NULL, 0, format, arg);
+    va_end(copy);
+    if(len >= sizeof(loc_buf)){
+        temp = new char[len+1];
+        if(temp == NULL) {
+            return;
+        }
+    }
+    len = vsnprintf(temp, len+1, format, arg);
+    grbl_sendf(client, "[MSG:%s]\r\n", temp);
+    va_end(arg);
+    if(len > 64){
+        delete[] temp;
+    }
+}
 
 //function to notify
 void grbl_notify(const char *title, const char *msg){
@@ -234,31 +260,33 @@ void report_feedback_message(uint8_t message_code)  // OK to send to all clients
 {
 	switch(message_code) {
     case MESSAGE_CRITICAL_EVENT:
-      grbl_send(CLIENT_ALL,"[MSG:Reset to continue]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Reset to continue"); break;
     case MESSAGE_ALARM_LOCK:
-      grbl_send(CLIENT_ALL, "[MSG:'$H'|'$X' to unlock]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "'$H'|'$X' to unlock"); break;
     case MESSAGE_ALARM_UNLOCK:
-      grbl_send(CLIENT_ALL, "[MSG:Caution: Unlocked]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Caution: Unlocked"); break;
     case MESSAGE_ENABLED:
-      grbl_send(CLIENT_ALL, "[MSG:Enabled]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Enabled"); break;
     case MESSAGE_DISABLED:
-      grbl_send(CLIENT_ALL, "[MSG:Disabled]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Disabled"); break;
     case MESSAGE_SAFETY_DOOR_AJAR:
-      grbl_send(CLIENT_ALL, "[MSG:Check Door]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Check door"); break;
     case MESSAGE_CHECK_LIMITS:
-      grbl_send(CLIENT_ALL, "[MSG:Check Limits]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Check limits"); break;
     case MESSAGE_PROGRAM_END:
-      grbl_send(CLIENT_ALL, "[MSG:Pgm End]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Program End"); break;
     case MESSAGE_RESTORE_DEFAULTS:
-      grbl_send(CLIENT_ALL, "[MSG:Restoring defaults]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Restoring defaults"); break;
     case MESSAGE_SPINDLE_RESTORE:
-      grbl_send(CLIENT_ALL, "[MSG:Restoring spindle]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Restoring spindle");; break;
     case MESSAGE_SLEEP_MODE:
-      grbl_send(CLIENT_ALL, "[MSG:Sleeping]\r\n"); break;
+      grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Sleeping"); break;
 #ifdef ENABLE_SD_CARD
 		case MESSAGE_SD_FILE_QUIT:
 			grbl_notifyf("SD print canceled", "Reset during SD file at line: %d", sd_get_current_line_number());
-			grbl_sendf(CLIENT_ALL, "[MSG:Reset during SD file at line: %d]\r\n", sd_get_current_line_number()); break;
+			grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Reset during SD file at line: %d", sd_get_current_line_number);
+			break;
+			
 #endif
   }  		
 }
@@ -266,25 +294,27 @@ void report_feedback_message(uint8_t message_code)  // OK to send to all clients
 
 // Welcome message
 void report_init_message(uint8_t client)
-{
-	#ifdef CPU_MAP_NAME
-		grbl_send(client,"[MSG:Using cpu_map..." CPU_MAP_NAME "]\r\n");
-	#endif
+{	
 	grbl_send(client,"\r\nGrbl " GRBL_VERSION " ['$' for help]\r\n");
 }
 
 // Grbl help message
 void report_grbl_help(uint8_t client) {	
-  grbl_send(client,"[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $SLP $C $X $H $F ~ ! ? ctrl-x]\r\n");	
+  grbl_send(client,"[HLP:$$ $+ $# $G $I $N $x=val $Nx=line $J=line $SLP $C $X $H $F ~ ! ? ctrl-x]\r\n");	
 }
 
 
 // Grbl global settings print out.
 // NOTE: The numbering scheme here must correlate to storing in settings.c
-void report_grbl_settings(uint8_t client) {
+// Extended setting will be displayed if force_extended is true or #ifdef SHOW_EXTENDED_SETTINGS
+void report_grbl_settings(uint8_t client, uint8_t show_extended) {
   // Print Grbl settings.
 	char setting[20];
-	char rpt[1000];  
+	char rpt[1000];
+	
+	#ifdef SHOW_EXTENDED_SETTINGS
+		show_extended = true;
+	#endif	
 	
 	rpt[0] = '\0';
 	
@@ -322,7 +352,7 @@ void report_grbl_settings(uint8_t client) {
     strcat(rpt, "$32=0\r\n");
   #endif
   
-  #ifdef SHOW_EXTENDED_SETTINGS
+  if (show_extended) {
 		sprintf(setting, "$33=%5.3f\r\n", settings.spindle_pwm_freq);   strcat(rpt, setting);
 		sprintf(setting, "$34=%3.3f\r\n", settings.spindle_pwm_off_value);   strcat(rpt, setting);
 		sprintf(setting, "$35=%3.3f\r\n", settings.spindle_pwm_min_value);   strcat(rpt, setting);
@@ -334,9 +364,8 @@ void report_grbl_settings(uint8_t client) {
 
     for (uint8_t index = 0; index<USER_SETTING_COUNT; index++) {
       sprintf(setting, "$%d=%5.3f\r\n", 90 + index, settings.machine_float[index]);   strcat(rpt, setting);
-    }
-
-  #endif
+	}
+  }
 	
   // Print axis settings
   uint8_t idx, set_idx;
@@ -348,12 +377,12 @@ void report_grbl_settings(uint8_t client) {
 				case 1: sprintf(setting, "$%d=%4.3f\r\n", val+idx, settings.max_rate[idx]);   strcat(rpt, setting);	 break;
 				case 2: sprintf(setting, "$%d=%4.3f\r\n", val+idx, settings.acceleration[idx]/(60*60));   strcat(rpt, setting);	 break;
 				case 3: sprintf(setting, "$%d=%4.3f\r\n", val+idx, -settings.max_travel[idx]);   strcat(rpt, setting);	 break;
-				#ifdef SHOW_EXTENDED_SETTINGS
-					case 4: sprintf(setting, "$%d=%4.3f\r\n", val+idx, settings.current[idx]);   strcat(rpt, setting);	 break;
-					case 5: sprintf(setting, "$%d=%4.3f\r\n", val+idx, settings.hold_current[idx]);   strcat(rpt, setting);	 break;
-					case 6: sprintf(setting, "$%d=%d\r\n", val+idx, settings.microsteps[idx]);   strcat(rpt, setting);	 break;
-          case 7: sprintf(setting, "$%d=%d\r\n", val+idx, settings.stallguard[idx]);   strcat(rpt, setting);	 break;
-				#endif
+				
+					case 4: if (show_extended) {sprintf(setting, "$%d=%4.3f\r\n", val+idx, settings.current[idx]);   strcat(rpt, setting);}	 break;
+					case 5: if (show_extended) {sprintf(setting, "$%d=%4.3f\r\n", val+idx, settings.hold_current[idx]);   strcat(rpt, setting);}	 break;
+					case 6: if (show_extended) {sprintf(setting, "$%d=%d\r\n", val+idx, settings.microsteps[idx]);   strcat(rpt, setting);}	 break;
+					case 7: if (show_extended) {sprintf(setting, "$%d=%d\r\n", val+idx, settings.stallguard[idx]);   strcat(rpt, setting);}	 break;
+				
       }
     }
     val += AXIS_SETTINGS_INCREMENT;
@@ -867,8 +896,8 @@ void report_gcode_comment(char *comment) {
 			msg[index-offset] = comment[index];
 			index++;
 		}
-		msg[index-offset] = 0; // null terminate
+		msg[index-offset] = 0; // null terminate		
 		
-		grbl_sendf(CLIENT_ALL, "[MSG:GCode Comment %s]\r\n",msg);
+		grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "GCode Comment...%s", msg);		
 	}	
 }

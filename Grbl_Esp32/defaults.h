@@ -188,8 +188,6 @@
 
 
 
-
-
 // =========== 	AXIS RESOLUTION ======
 
 #ifndef  DEFAULT_X_STEPS_PER_MM

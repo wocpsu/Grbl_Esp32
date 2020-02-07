@@ -43,7 +43,7 @@ void settings_init()
   if(!read_global_settings()) {
     report_status_message(STATUS_SETTING_READ_FAIL, CLIENT_SERIAL);
     settings_restore(SETTINGS_RESTORE_ALL); // Force restore all EEPROM data.
-    report_grbl_settings(CLIENT_SERIAL); // only the serial could be working at this point
+    report_grbl_settings(CLIENT_SERIAL, false); // only the serial could be working at this point
   }
 }
 
@@ -158,6 +158,7 @@ void settings_restore(uint8_t restore_flag) {
      settings.stallguard[C_AXIS] = DEFAULT_Z_STALLGUARD;
 	#endif
 	
+
     // User Integer values
 	settings.machine_int16[0] = DEFAULT_USER_INT_80;
 	settings.machine_int16[1] = DEFAULT_USER_INT_81;
@@ -171,6 +172,7 @@ void settings_restore(uint8_t restore_flag) {
 	settings.machine_float[2] = DEFAULT_USER_FLOAT_92;
 	settings.machine_float[3] = DEFAULT_USER_FLOAT_93;
 	settings.machine_float[4] = DEFAULT_USER_FLOAT_94;
+
 
     write_global_settings();
   }
@@ -454,6 +456,6 @@ void settings_spi_driver_init() {
 	#ifdef USE_TRINAMIC
 		trinamic_change_settings();
 	#else
-		grbl_send(CLIENT_ALL, "[MSG: No SPI drivers setup]\r\n");
+		grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "No SPI drivers setup");
 	#endif
 }
