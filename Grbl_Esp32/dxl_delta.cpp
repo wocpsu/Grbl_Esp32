@@ -177,6 +177,41 @@ void dxl_sync_position()
     memcpy(last_mpos,sys_position,sizeof(sys_position)); 
 }
 
+void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *position) //The target and position are provided in machine space
+{	
+	// all we wantto do is test the destination to be within servo range
+	// if it is, run the move
+	// if not show an error
+	
+	
+	// Check the destination to see if it is in work area
+	int status = delta_calcInverse(	target[X_AXIS], target[Y_AXIS], target[Z_AXIS] + delta_z_offset, 
+									motor_angles[0], motor_angles[1], motor_angles[2]);
+	
+	if (status == KIN_ANGLE_ERROR) {
+		grbl_sendf(	CLIENT_SERIAL, "[MSG:Kinematics out of range, move rejected]\r\n");
+		return;
+	}
+	
+	bool angle_error = false;
+	for (uint8_t axis = 0; axis < 3; axis++)
+	{		
+		if (motor_angles[axis] < MAX_UP_ANGLE) {
+			grbl_sendf(	CLIENT_SERIAL, "[MSG:Servo %d destination angle too high]\r\n", axis);
+			angle_error = true;
+		}
+		else if (motor_angles[axis] > MAX_DOWN_ANGLE) {
+			grbl_sendf(	CLIENT_SERIAL, "[MSG:Servo %d destination angle too low]\r\n", axis);
+			angle_error = true;
+		}
+	}
+
+	if (angle_error) {
+		grbl_sendf(	CLIENT_SERIAL, "[MSG:Kinematics out of range, move rejected]\r\n");
+		return;
+	}	
+}
+
  // inverse kinematics: (x0, y0, z0) -> (theta1, theta2, theta3)
  // returned status: 0=OK, -1=non-existing position
  int delta_calcInverse(float x0, float y0, float z0, float &theta1, float &theta2, float &theta3) {
