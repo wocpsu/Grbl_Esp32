@@ -182,6 +182,7 @@ void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *positio
 	// all we wantto do is test the destination to be within servo range
 	// if it is, run the move
 	// if not show an error
+	float motor_angles[N_AXIS];
 	
 	
 	// Check the destination to see if it is in work area
