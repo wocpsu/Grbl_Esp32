@@ -59,6 +59,23 @@
 #define USE_MACHINE_INIT
 #define USE_CUSTOM_HOMING
 #define USE_DYNAMIXEL
+#define USE_KINEMATICS
+
+/*
+	FET1 = GPIO_NUM_25
+	FET2 = GPIO_NUM_26
+	FET3 = GPIO_NUM_27
+	
+	Servo1 = GPIO_NUM_2
+	Servo2 = GPIO_NUM_15
+	Servo3 = GPIO_NUM_16
+	
+	
+	
+*/
+
+#define USER_DIGITAL_PIN_1	GPIO_NUM_2
+
 
 // defaults
 #define DEFAULT_STEP_PULSE_MICROSECONDS 3 
@@ -106,7 +123,7 @@
     void dynamixelSyncTask(void *pvParameters);
     void dxl_sync_position();
     void dxl_read_position();
-    //void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *position);
+    void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *position);
    // void forward_kinematics(float *position);
     int delta_calcInverse(float x0, float y0, float z0, float &theta1, float &theta2, float &theta3);
     int delta_calcForward(float theta1, float theta2, float theta3, float &x0, float &y0, float &z0);
@@ -116,8 +133,8 @@
 
     void dxl_delta_torque_enable(bool enable);
 
-    //bool kinematics_pre_homing(uint8_t cycle_mask);
-    //void kinematics_post_homing();
+    bool kinematics_pre_homing(uint8_t cycle_mask);
+    void kinematics_post_homing();
     bool user_defined_homing();
     void user_m30();
     

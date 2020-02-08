@@ -56,6 +56,7 @@
 #include "stepper.h"
 #include "jog.h"
 #include "inputbuffer.h"
+#include "user_io_control.h"
 
 #ifdef ENABLE_BLUETOOTH
 	#include "BTconfig.h"

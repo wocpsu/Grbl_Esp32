@@ -60,7 +60,7 @@ void machine_init() {
 	// Z offset is the z distance from the motor axes to the end effector axes at zero angle
 	float x0,y0;
 	delta_calcForward(0.0, 0.0, 0.0, x0, y0, delta_z_offset);	
-	// grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Z Offset at 0,0,0 is:%4.3f", delta_z_offset);  // uncomment if you want to see the z offset
+	grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Z Offset at 0,0,0 is:%4.3f", delta_z_offset);  // uncomment if you want to see the z offset
 	
 	
     dxl_init(); // setup the UART
@@ -170,6 +170,7 @@ void dxl_sync_position()
                 my_pos[0] =  DXL_value(theta1, DXL_MOTOR_0_CENTER, DXL_MOTOR_0_FWD);
                 my_pos[1] =  DXL_value(theta2, DXL_MOTOR_1_CENTER, DXL_MOTOR_1_FWD);
                 my_pos[2] =  DXL_value(theta3, DXL_MOTOR_2_CENTER, DXL_MOTOR_2_FWD);
+				//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO,"DXL Move: %d, %d %d", my_pos[0], my_pos[1], my_pos[2]);
                 dxl_sync_goal_position(my_servo_ids, my_pos, N_AXIS);                
             }
         }
@@ -182,15 +183,18 @@ void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *positio
 	// all we wantto do is test the destination to be within servo range
 	// if it is, run the move
 	// if not show an error
-	float motor_angles[N_AXIS];
+	float motor_angles[N_AXIS];		
+	
+	
+	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "[Kin Target %4.3f %4.3f %4.3f", target[X_AXIS], target[Y_AXIS], target[Z_AXIS]);
 	
 	
 	// Check the destination to see if it is in work area
-	int status = delta_calcInverse(	target[X_AXIS], target[Y_AXIS], target[Z_AXIS] + delta_z_offset, 
+	int status = delta_calcInverse(	target[X_AXIS], target[Y_AXIS], target[Z_AXIS], 
 									motor_angles[0], motor_angles[1], motor_angles[2]);
 	
 	if (status == KIN_ANGLE_ERROR) {
-		grbl_sendf(	CLIENT_SERIAL, "[MSG:Kinematics out of range, move rejected]\r\n");
+		grbl_sendf(	CLIENT_SERIAL, "[MSG:Target out of range, move rejected]\r\n");
 		return;
 	}
 	
@@ -198,19 +202,22 @@ void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *positio
 	for (uint8_t axis = 0; axis < 3; axis++)
 	{		
 		if (motor_angles[axis] < MAX_UP_ANGLE) {
-			grbl_sendf(	CLIENT_SERIAL, "[MSG:Servo %d destination angle too high]\r\n", axis);
+			grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Servo %d destination angle too high", axis);
 			angle_error = true;
 		}
 		else if (motor_angles[axis] > MAX_DOWN_ANGLE) {
-			grbl_sendf(	CLIENT_SERIAL, "[MSG:Servo %d destination angle too low]\r\n", axis);
+			grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Servo %d destination angle too low", axis);
 			angle_error = true;
 		}
 	}
 
 	if (angle_error) {
-		grbl_sendf(	CLIENT_SERIAL, "[MSG:Kinematics out of range, move rejected]\r\n");
+		grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Destination out of range, move rejected");
 		return;
-	}	
+	}
+	
+	mc_line(target, pl_data);
+	
 }
 
  // inverse kinematics: (x0, y0, z0) -> (theta1, theta2, theta3)
@@ -289,19 +296,13 @@ void dxl_read_position() {
     encoder[1] = dxl_present_position(DXL_MOTOR_1_ID);
     encoder[2] = dxl_present_position(DXL_MOTOR_2_ID);
 
-    //grbl_sendf( CLIENT_SERIAL, "[MSG:Servo counts %d %d %d]\r\n", encoder[0], encoder[1], encoder[2]);
-
     // convert encoder values to degrees
     theta[0] = DXL_value_degrees((int32_t)encoder[0], DXL_MOTOR_0_CENTER, DXL_MOTOR_0_FWD);
     theta[1] = DXL_value_degrees((int32_t)encoder[1], DXL_MOTOR_1_CENTER, DXL_MOTOR_1_FWD);
     theta[2] = DXL_value_degrees((int32_t)encoder[2], DXL_MOTOR_2_CENTER, DXL_MOTOR_2_FWD);
 
-    //grbl_sendf( CLIENT_SERIAL, "[MSG:Servo angles %3.2f %3.2f %3.2f]\r\n", theta[0], theta[1], theta[2]);
-
     // use degrees to find XYZ positions
     delta_calcForward( theta[0],  theta[1],  theta[2], x, y, z);
-
-    //grbl_sendf( CLIENT_SERIAL, "[MSG:Postion %3.2f %3.2f %3.2f]\r\n\r\n", x, y, z);
 
     // update Grbl posiiton
     sys_position[X_AXIS] = x * settings.steps_per_mm[X_AXIS];
@@ -363,36 +364,36 @@ void dxl_delta_torque_enable(bool enable)
 
     dxl_delta_torque_enable_state = enable;
 
-    //grbl_sendf(CLIENT_SERIAL, "[MSG:Torque Enable %d]\r\n", enable);
-
 }
 
 void forward_kinematics(float *position)
 {
-	float calc_fwd[N_AXIS];
-	
-	//grbl_sendf(CLIENT_ALL,"[MSG:Fwd Kin Calc 1....%4.3f %4.3f %4.3f]\r\n", position[X_AXIS], position[Y_AXIS], position[Z_AXIS]);
+	float calc_fwd[N_AXIS];	
 	
 	position[X_AXIS] += gc_state.coord_system[X_AXIS]+gc_state.coord_offset[X_AXIS];
 	position[Y_AXIS] += gc_state.coord_system[Y_AXIS]+gc_state.coord_offset[Y_AXIS];
 	position[Z_AXIS] += gc_state.coord_system[Z_AXIS]+gc_state.coord_offset[Z_AXIS];
 	
-	//grbl_sendf(CLIENT_ALL,"[MSG:Fwd Kin Calc 2....%4.3f %4.3f %4.3f]\r\n", position[X_AXIS], position[Y_AXIS], position[Z_AXIS]);
-	
 	if (delta_calcForward(position[X_AXIS], position[Y_AXIS], position[Z_AXIS], calc_fwd[X_AXIS], calc_fwd[Y_AXIS], calc_fwd[Z_AXIS]) == 0) {
 		position[X_AXIS] = calc_fwd[X_AXIS] - (gc_state.coord_system[X_AXIS]+gc_state.coord_offset[X_AXIS]);
 		position[Y_AXIS] = calc_fwd[Y_AXIS] - (gc_state.coord_system[Y_AXIS]+gc_state.coord_offset[Y_AXIS]);
 		position[Z_AXIS] = calc_fwd[Z_AXIS] - (gc_state.coord_system[Z_AXIS]+gc_state.coord_offset[Z_AXIS]) - delta_z_offset;
-		//grbl_sendf(CLIENT_ALL,"[MSG:Fwd Kin Calc....3 %4.3f %4.3f %4.3f %4.3f]\r\n", position[X_AXIS], position[Y_AXIS], position[Z_AXIS], delta_z_offset);
 	}
 	else {
-		grbl_send(CLIENT_SERIAL, "[MSG:Fwd Kin Error]\r\n");
+		grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Fwd Kin Error");
 	}
 }
 
+bool kinematics_pre_homing(uint8_t cycle_mask) {	
+	return false; // finish normal homing cycle
+}
+
+void kinematics_post_homing() {	
+}
+
+
 // handle the M30 command
 void user_m30() {
-	inputBuffer.push("$H\r");
 }
 
 
