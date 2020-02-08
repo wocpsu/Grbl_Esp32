@@ -44,7 +44,7 @@ Some features should not be changed. See notes below.
 // The CPU map is the main definition of the machine/controller you want to use
 // These are typically found in the cpu_map.h file.
 // See Github repo wiki for more details
-#define CPU_MAP_TEST_DRIVE // these are defined in cpu_map.h
+//#define CPU_MAP_TEST_DRIVE // these are defined in cpu_map.h
 
 #define N_AXIS 3 // Number of axes defined (valid range: 3 to 6) 
 
@@ -53,7 +53,7 @@ Some features should not be changed. See notes below.
 // one configuration file by placing their specific defaults and pin map at the bottom of this file.
 // If doing so, simply comment out these two defines and see instructions below.
 //#define CPU_MAP_DXL_DELTA // these are defined in cpu_map.h
-#define CPU_MAP_CHEETAH
+#define CPU_MAP_DXL_DELTA
 
 #define VERBOSE_HELP // adds addition help info, but could confuse some senders
 #define GRBL_MSG_LEVEL MSG_LEVEL_INFO // what level of [MSG:....] do you want to see 0=all off
@@ -61,11 +61,11 @@ Some features should not be changed. See notes below.
 // Serial baud rate
 #define BAUD_RATE 115200
 
-// #define ENABLE_BLUETOOTH // enable bluetooth
+//#define ENABLE_BLUETOOTH // enable bluetooth
 
 #define ENABLE_SD_CARD // enable use of SD Card to run jobs
 
-// #define ENABLE_WIFI //enable wifi
+//#define ENABLE_WIFI //enable wifi
 
 #define ENABLE_HTTP //enable HTTP and all related services
 #define ENABLE_OTA  //enable OTA

@@ -28,17 +28,6 @@
 #include "grbl.h"
 #ifdef CPU_MAP_DXL_DELTA
 
-/*
- Apply inverse kinematics for a polar system
-
- float target: 					The desired target location in machine space
- plan_line_data_t *pl_data:		Plan information like feed rate, etc
- float *position:				The previous "from" location of the move
-
- Note: It is assumed only the radius axis (X) is homed and only X and Z have offsets
-
-
-*/
 // trigonometric constants
  const float sqrt3 = 1.732050807;
  const float pi = 3.141592653;    // PI
@@ -48,11 +37,14 @@
  const float sin30 = 0.5;
  const float tan30 = 1.0/sqrt3;
 
- const float rf = 70.0;
- const float re =  133.5;
+ // the geometry of the delta
+ const float rf = 70.0; // radius of the fixed side (length of motor craks)
+ const float re =  133.5; // radius of end effector side (length of linkages)
 
-const float f = 179.437f;
-const float e = 86.6025f;
+const float f = 179.437f; // sized of fixed side triangel
+const float e = 86.6025f; // size of end effector side triangle
+
+float delta_z_offset;
 
 static TaskHandle_t dynamixelSyncTaskHandle = 0;  // TO DO rename tap delta
 
@@ -60,31 +52,27 @@ uint8_t my_servo_ids[N_AXIS] = {DXL_MOTOR_0_ID, DXL_MOTOR_1_ID, DXL_MOTOR_2_ID};
 int32_t my_pos[N_AXIS];
 bool dxl_delta_torque_enable_state = false;
 
- void machine_init()
-{	
-
+void machine_init() {  
     
-
-    grbl_send(CLIENT_SERIAL, "[MSG:DXL Delta Init]\r\n");
-    
+	grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Init"); // print a message 
+	
+	// Calculate the Z offset at the motor zero angles ... 
+	// Z offset is the z distance from the motor axes to the end effector axes at zero angle
+	float x0,y0;
+	delta_calcForward(0.0, 0.0, 0.0, x0, y0, delta_z_offset);	
+	// grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Z Offset at 0,0,0 is:%4.3f", delta_z_offset);  // uncomment if you want to see the z offset
+	
+	
     dxl_init(); // setup the UART
-
        
     // ping the servos...they will [MSG:...] their m/n and f/w rev. 
     dxl_ping(DXL_MOTOR_0_ID);
     dxl_ping(DXL_MOTOR_1_ID);
-    dxl_ping(DXL_MOTOR_2_ID); 
+    dxl_ping(DXL_MOTOR_2_ID);
 
-    //vTaskDelay(500);
-
-     //return;
-
+    
     // turn off torque so we can set EEPROM registers...it gets turned back on in dynamixelSyncTask
-    dxl_delta_torque_enable(false);    
-    //dxl_torque_enable(DXL_MOTOR_0_ID, false);
-    //dxl_torque_enable(DXL_MOTOR_1_ID, false);
-    //dxl_torque_enable(DXL_MOTOR_2_ID, false);
-
+    dxl_delta_torque_enable(false);
 
     // put into position mode
     dxl_operating_mode(DXL_MOTOR_0_ID, DXL_CONTROL_MODE_POSITION);
@@ -122,7 +110,8 @@ void dynamixelSyncTask(void *pvParameters)
 
 bool user_defined_homing()
 {
-
+	grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Homing is not used on this machine"); // print a message
+	return true; // true = do not continue with normal Grbl homing
 }
 
 void dxl_sync_position()
@@ -137,17 +126,11 @@ void dxl_sync_position()
 	
     float mpos[N_AXIS]; // current machine position
     float last_mpos[N_AXIS]; // last machine position
-    float dxl_z_pos;
+    float dxl_z_pos;    
 
-    //grbl_send(CLIENT_SERIAL, ".");
-
-    // check if the state has changed
-    
+    // check if the state has changed    
     if (stepper_idle == dxl_delta_torque_enable_state) {  // they are opposites, so if they are equal change...
-        // sync the servo torque registers to the steppers setting             
-        //dxl_torque_enable(DXL_MOTOR_0_ID, !stepper_idle);
-        //dxl_torque_enable(DXL_MOTOR_1_ID, !stepper_idle);
-        //dxl_torque_enable(DXL_MOTOR_2_ID, !stepper_idle);
+        // sync the servo torque registers to the steppers setting
         dxl_delta_torque_enable(!stepper_idle);
     }
 
@@ -164,8 +147,7 @@ void dxl_sync_position()
     }
     */
 
-    // check to see if the position moved since the last time thorugh
-    
+    // check to see if the position moved since the last time thorugh    
     for (int axis=0; axis<N_AXIS; axis++){
         if (sys_position[axis] != last_mpos[axis]) {
             moved = true;
@@ -173,7 +155,7 @@ void dxl_sync_position()
         }
     }
 
-    moved = true;
+    moved = true; // override it for now
         
     if (stepper_idle) {
         // sync from manual moves
@@ -184,17 +166,11 @@ void dxl_sync_position()
 
             if (status != KIN_ANGLE_CALC_OK) {
                 grbl_sendf(CLIENT_SERIAL, "[MSG: DXL Out of range]\r\n"); 
-            } else {
-                /*
-                dxl_goal_position(DXL_MOTOR_0_ID, DXL_value(theta1, DXL_MOTOR_0_CENTER, DXL_MOTOR_0_FWD));
-                dxl_goal_position(DXL_MOTOR_1_ID, DXL_value(theta2, DXL_MOTOR_1_CENTER, DXL_MOTOR_1_FWD));
-                dxl_goal_position(DXL_MOTOR_2_ID, DXL_value(theta3, DXL_MOTOR_2_CENTER, DXL_MOTOR_2_FWD));
-                */
+            } else {              
                 my_pos[0] =  DXL_value(theta1, DXL_MOTOR_0_CENTER, DXL_MOTOR_0_FWD);
                 my_pos[1] =  DXL_value(theta2, DXL_MOTOR_1_CENTER, DXL_MOTOR_1_FWD);
                 my_pos[2] =  DXL_value(theta3, DXL_MOTOR_2_CENTER, DXL_MOTOR_2_FWD);
-                dxl_sync_goal_position(my_servo_ids, my_pos, N_AXIS);
-                
+                dxl_sync_goal_position(my_servo_ids, my_pos, N_AXIS);                
             }
         }
     } 
@@ -216,61 +192,6 @@ void dxl_sync_position()
      return status;
 }
 
-
- // forward kinematics: (theta1, theta2, theta3) -> (x0, y0, z0)
- // returned status: 0=OK, -1=non-existing position
- /*
- int delta_calcForward(float theta1, float theta2, float theta3, float &x0, float &y0, float &z0) {
-     float f = 179.437f;
-     float e = 86.6025f;
-
-     float t = (f-e)*tan30/2;
-     float dtr = pi/(float)180.0;
- 
-     theta1 *= dtr;
-     theta2 *= dtr;
-     theta3 *= dtr;
- 
-     float y1 = -(t + HIP_RADIUS*cos(theta1));
-     float z1 = -HIP_RADIUS*sin(theta1);
- 
-     float y2 = (t + HIP_RADIUS*cos(theta2))*sin30;
-     float x2 = y2*tan60;
-     float z2 = -HIP_RADIUS*sin(theta2);
- 
-     float y3 = (t + HIP_RADIUS*cos(theta3))*sin30;
-     float x3 = -y3*tan60;
-     float z3 = -HIP_RADIUS*sin(theta3);
- 
-     float dnm = (y2-y1)*x3-(y3-y1)*x2;
- 
-     float w1 = y1*y1 + z1*z1;
-     float w2 = x2*x2 + y2*y2 + z2*z2;
-     float w3 = x3*x3 + y3*y3 + z3*z3;
-     
-     // x = (a1*z + b1)/dnm
-     float a1 = (z2-z1)*(y3-y1)-(z3-z1)*(y2-y1);
-     float b1 = -((w2-w1)*(y3-y1)-(w3-w1)*(y2-y1))/2.0;
- 
-     // y = (a2*z + b2)/dnm;
-     float a2 = -(z2-z1)*x3+(z3-z1)*x2;
-     float b2 = ((w2-w1)*x3 - (w3-w1)*x2)/2.0;
- 
-     // a*z^2 + b*z + c = 0
-     float a = a1*a1 + a2*a2 + dnm*dnm;
-     float b = 2*(a1*b1 + a2*(b2-y1*dnm) - z1*dnm*dnm);
-     float c = (b2-y1*dnm)*(b2-y1*dnm) + b1*b1 + dnm*dnm*(z1*z1 - HIP_RADIUS*HIP_RADIUS);
-  
-     // discriminant
-     float d = b*b - (float)4.0*a*c;
-     if (d < 0) return -1; // non-existing point
- 
-     z0 = -(float)0.5*(b+sqrt(d))/a;
-     x0 = (a1*z0 + b1)/dnm;
-     y0 = (a2*z0 + b2)/dnm;
-     return 0;
- }
- */
 int delta_calcForward(float theta1, float theta2, float theta3, float &x0, float &y0, float &z0) {
         
 
@@ -371,9 +292,11 @@ void dxl_read_position() {
      theta = 180.0*atan(-zj/(y1 - yj))/pi + ((yj>y1)?180.0:0.0);
      return 0;
  }
+ 
+ 
 
 
-// convert degrees to Dynamixel counts. For wiring purposes some are mounted inverted.
+// convert degrees to Dynamixel counts. For wiring purposes some may be mounted inverted.
 // Use the forward parameter to correct for backwards rotation.
  uint16_t DXL_value(float degrees, uint16_t centalVal, bool forward)
  {
@@ -410,7 +333,25 @@ void dxl_delta_torque_enable(bool enable)
 
 void forward_kinematics(float *position)
 {
-
+	float calc_fwd[N_AXIS];
+	
+	//grbl_sendf(CLIENT_ALL,"[MSG:Fwd Kin Calc 1....%4.3f %4.3f %4.3f]\r\n", position[X_AXIS], position[Y_AXIS], position[Z_AXIS]);
+	
+	position[X_AXIS] += gc_state.coord_system[X_AXIS]+gc_state.coord_offset[X_AXIS];
+	position[Y_AXIS] += gc_state.coord_system[Y_AXIS]+gc_state.coord_offset[Y_AXIS];
+	position[Z_AXIS] += gc_state.coord_system[Z_AXIS]+gc_state.coord_offset[Z_AXIS];
+	
+	//grbl_sendf(CLIENT_ALL,"[MSG:Fwd Kin Calc 2....%4.3f %4.3f %4.3f]\r\n", position[X_AXIS], position[Y_AXIS], position[Z_AXIS]);
+	
+	if (delta_calcForward(position[X_AXIS], position[Y_AXIS], position[Z_AXIS], calc_fwd[X_AXIS], calc_fwd[Y_AXIS], calc_fwd[Z_AXIS]) == 0) {
+		position[X_AXIS] = calc_fwd[X_AXIS] - (gc_state.coord_system[X_AXIS]+gc_state.coord_offset[X_AXIS]);
+		position[Y_AXIS] = calc_fwd[Y_AXIS] - (gc_state.coord_system[Y_AXIS]+gc_state.coord_offset[Y_AXIS]);
+		position[Z_AXIS] = calc_fwd[Z_AXIS] - (gc_state.coord_system[Z_AXIS]+gc_state.coord_offset[Z_AXIS]) - delta_z_offset;
+		//grbl_sendf(CLIENT_ALL,"[MSG:Fwd Kin Calc....3 %4.3f %4.3f %4.3f %4.3f]\r\n", position[X_AXIS], position[Y_AXIS], position[Z_AXIS], delta_z_offset);
+	}
+	else {
+		grbl_send(CLIENT_SERIAL, "[MSG:Fwd Kin Error]\r\n");
+	}
 }
 
 // handle the M30 command

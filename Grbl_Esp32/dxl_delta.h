@@ -52,6 +52,7 @@
 #define CPU_MAP_NAME "CPU_MAP_DXL_DELTA"
 #define LIMIT_MASK 0  // no limit pins	
 
+#define USE_RMT_STEPS   // not actually used, but avoids some delays in timed steps 
 #define USE_MACHINE_INIT
 #define USE_CUSTOM_HOMING
 #define USE_DYNAMIXEL
@@ -107,7 +108,6 @@
     int delta_calcInverse(float x0, float y0, float z0, float &theta1, float &theta2, float &theta3);
     int delta_calcForward(float theta1, float theta2, float theta3, float &x0, float &y0, float &z0);
     int delta_calcAngleYZ(float x0, float y0, float z0, float &theta);
-
     uint16_t DXL_value(float degrees, uint16_t centalVal, bool forward);
     float DXL_value_degrees(int32_t value, int16_t centerVal, bool forward);
 
