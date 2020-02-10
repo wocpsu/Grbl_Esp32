@@ -23,9 +23,6 @@ I/O Types
 		Available Gcode letters
 		P Parameter is which I/O pin
 		L Parameter is Pulse Duration
-		I tbd
-		J
-		K
 		
 		
 		
@@ -47,11 +44,13 @@ I/O Types
 #define USER_IO_PHASE_SPIKE 	1
 #define USER_IO_PHASE_HOLD   	2
 
-#define USER_IO_SPIKE_DURATION	500
+#define USER_IO_SPIKE_DURATION	100
 #define USER_IO_HOLD_DURATION   1000
 
 #define USER_MODE_PWM_LOW   20 // not percent actual duty count
 #define USER_MODE_PWM_HIGH   200 // not percent actual duty count
+
+
 
 //void user_io_control_init_old();
 //void sys_io_control_old(uint8_t io_num_mask, bool turnOn);
@@ -69,7 +68,12 @@ class UserIoControl{
 		bool isOn();
 		bool needsTimerUpdates();
 		void update(); // updates spike and hold phases
+		
+		void set_mode(uint8_t mode);
 		void set_hold_length(uint32_t length);
+		void set_pwm_freq(uint32_t pwm_freq);
+		void set_spike_hold_perecent(uint8_t spike_percent, uint8_t hold_percent);
+		void set_pwm_high_low(uint16_t pwm_duty_low, uint16_t pwm_duty_high);
 		
 	private:
 		uint8_t _gcode_num = 0;
@@ -86,7 +90,7 @@ class UserIoControl{
 		uint16_t _pwm_duty_high = USER_MODE_PWM_HIGH;
 		
 		uint8_t _spike_percent = 100;
-		uint8_t _hold_percent = 25;
+		uint8_t _hold_percent = 50;
 		
 		int64_t _spike_end; // microseconds ... gets compared to esp_timer_get_time()
 		int64_t _hold_end; // microseconds ... gets compared to esp_timer_get_time()
@@ -99,5 +103,19 @@ class UserIoControl{
 		
 		
 };
+
+// allow other modules to have access to the objects for specific machine setup
+#ifdef USER_DIGITAL_PIN_1
+	extern UserIoControl Pin1_UserIoControl;
+#endif
+#ifdef USER_DIGITAL_PIN_2
+	extern UserIoControl Pin2_UserIoControl;
+#endif
+#ifdef USER_DIGITAL_PIN_3
+	extern UserIoControl Pin3_UserIoControl;
+#endif
+#ifdef USER_DIGITAL_PIN_4
+	extern UserIoControl Pin4_UserIoControl;
+#endif
 
 #endif

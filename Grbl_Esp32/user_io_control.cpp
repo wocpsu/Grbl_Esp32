@@ -49,15 +49,31 @@
 			If your servo moves opposite of what you want, just reverse the values
 	
 			50Hz is a typical PWM to use with servos
-			You would want the resolution to be 16 bitset
+			You would want the resolution to be 16 bits
 			
-			#define SERVO_MIN_PULSE_SEC 0.001 // min pulse in seconds
-			#define SERVO_MAX_PULSE_SEC 0.002 // max pulse in seconds
+			Here is some example math to find the range
 			
-			#define SERVO_TIME_PER_BIT  ((1.0 / (float)SERVO_PULSE_FREQ) / ((float)SERVO_PULSE_RES_COUNT) ) // seconds
+			
+			SERVO_PULSE_FREQ = 50
+			USER_IO_PULSE_RES_BITS = 16			
+			SERVO_MIN_PULSE_SEC 0.001
+			SERVO_MAX_PULSE_SEC 0.002 
+			
+			SERVO_PULSE_RES_COUNT (1<<USER_IO_PULSE_RES_BITS - 1) = 65535 // how many duty ticks cycle
+			
+			TIME_PER_BIT  ((1.0 / (float)SERVO_PULSE_FREQ) / ((float)SERVO_PULSE_RES_COUNT) ) // seconds
+			
+			1/50/65535 = 
+			3.0518e-7
+			
+						
 			#define SERVO_MIN_PULSE    (uint16_t)(SERVO_MIN_PULSE_SEC / SERVO_TIME_PER_BIT) // in timer counts
-			#define SERVO_MAX_PULSE    (uint16_t)(SERVO_MAX_PULSE_SEC / SERVO_TIME_PER_BIT) // in timer counts
+			0.001 / 0.000003052 
+			3,276.75
 			
+			#define SERVO_MAX_PULSE    (uint16_t)(SERVO_MAX_PULSE_SEC / SERVO_TIME_PER_BIT) // in timer counts
+			0.002 / 0.000003052 
+			6,553.5‬
 */
 
 
@@ -87,6 +103,8 @@ static TaskHandle_t userIoSyncTaskHandle = 0;
 
 void user_io_control_init() {
 	bool needsTimer = false;
+	
+	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "User I/O init");
 	
 	#ifdef USER_DIGITAL_PIN_1
 		Pin1_UserIoControl.init();
@@ -219,7 +237,7 @@ void UserIoControl::_write_pwm(uint32_t duty)
 
 uint32_t UserIoControl::_write_percent(uint8_t percent)
 {
-	uint32_t duty = mapConstrain(percent, 0.0, (1<<USER_IO_PULSE_RES_BITS), 0.0, 100.0);
+	uint32_t duty = mapConstrain(percent, 0.0, 100.0 , 0.0, (float)(1<<USER_IO_PULSE_RES_BITS-1));
 	_write_pwm(duty);
 }
 
@@ -285,6 +303,29 @@ bool UserIoControl::isOn()
 {
 	return _isOn;
 }
+
+void UserIoControl::set_mode(uint8_t mode) {
+	if (mode > 0 && mode < 3)
+		_mode = mode;		
+}
+
+void UserIoControl::set_pwm_freq(uint32_t pwm_freq) {
+	if (pwm_freq > 50 && pwm_freq < 10000)
+		_pwm_freq = pwm_freq;		
+}
+
+void UserIoControl::set_spike_hold_perecent(uint8_t spike_percent, uint8_t hold_percent)
+{	
+	_spike_percent = spike_percent;
+	_hold_percent = hold_percent;
+}
+
+void UserIoControl::set_pwm_high_low(uint16_t pwm_duty_low, uint16_t pwm_duty_high)
+{	
+	_pwm_duty_low = pwm_duty_low;	
+	_pwm_duty_high = pwm_duty_high;
+}
+
 
 void UserIoControl::set_hold_length(uint32_t length)
 {

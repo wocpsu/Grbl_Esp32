@@ -54,13 +54,18 @@ bool dxl_delta_torque_enable_state = false;
 
 void machine_init() {  
     
-	grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Init"); // print a message 
+	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Init"); // print a message 
+	
+	// setup user io
+	Pin1_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
+	Pin2_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
+	Pin3_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
 	
 	// Calculate the Z offset at the motor zero angles ... 
 	// Z offset is the z distance from the motor axes to the end effector axes at zero angle
 	float x0,y0;
 	delta_calcForward(0.0, 0.0, 0.0, x0, y0, delta_z_offset);	
-	grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Z Offset at 0,0,0 is:%4.3f", delta_z_offset);  // uncomment if you want to see the z offset
+	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "DXL Delta Z Offset at 0,0,0 is:%4.3f", delta_z_offset);  // uncomment if you want to see the z offset
 	
 	
     dxl_init(); // setup the UART
