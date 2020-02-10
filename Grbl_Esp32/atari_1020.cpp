@@ -25,7 +25,7 @@
 */
 #include "grbl.h"
 
-#ifdef ATARI_1020
+#ifdef CPU_MAP_ATARI_1020
 
 #define HOMING_PHASE_FULL_APPROACH	0 // move to right end
 #define HOMING_PHASE_CHECK			1 // check reed switch
@@ -37,17 +37,20 @@ static TaskHandle_t atariHomingTaskHandle = 0;
 uint16_t solenoid_pull_count;
 bool atari_homing = false;
 uint8_t homing_phase = HOMING_PHASE_FULL_APPROACH;
-uint8_t current_tool; 
+uint8_t current_tool;
+uint8_t atari_solenoid_pwm_channel;
 
 void machine_init()
 {				
 	solenoid_pull_count = 0; // initialize
 	
+	atari_solenoid_pwm_channel = sys_get_next_pwm_channel();
+	
 	grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Atari 1020 Solenoid");
 	
 	// setup PWM channel
-	ledcSetup(SOLENOID_CHANNEL_NUM, SOLENOID_PWM_FREQ, SOLENOID_PWM_RES_BITS);
-	ledcAttachPin(SOLENOID_PEN_PIN, SOLENOID_CHANNEL_NUM);
+	ledcSetup(atari_solenoid_pwm_channel, SOLENOID_PWM_FREQ, SOLENOID_PWM_RES_BITS);
+	ledcAttachPin(SOLENOID_PEN_PIN, atari_solenoid_pwm_channel);
 		
 	pinMode(SOLENOID_DIRECTION_PIN, OUTPUT);  // this sets the direction of the solenoid current	
 	pinMode(REED_SW_PIN, INPUT_PULLUP); // external pullup required
@@ -213,14 +216,14 @@ void calc_solenoid(float penZ)
 	digitalWrite(SOLENOID_DIRECTION_PIN, isPenUp);
 	
 	// skip setting value if it is unchanged
-	if (ledcRead(SOLENOID_CHANNEL_NUM) == solenoid_pen_pulse_len)
+	if (ledcRead(atari_solenoid_pwm_channel) == solenoid_pen_pulse_len)
 		return;
 	
 	// update the PWM value
 	// ledcWrite appears to have issues with interrupts, so make this a critical section
 	portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
 	portENTER_CRITICAL(&myMutex);
-		ledcWrite(SOLENOID_CHANNEL_NUM, solenoid_pen_pulse_len);
+		ledcWrite(atari_solenoid_pwm_channel, solenoid_pen_pulse_len);
 	portEXIT_CRITICAL(&myMutex);
 }
 

@@ -44,7 +44,6 @@
 #endif
 
 #define SERVO_Z_PIN 					GPIO_NUM_16
-#define SERVO_Z_CHANNEL_NUM 		5
 #define SERVO_Z_RANGE_MIN			0.0
 #define SERVO_Z_RANGE_MAX			5.0
 #define SERVO_Z_HOMING_TYPE		SERVO_HOMING_TARGET // during homing it will instantly move to a target value

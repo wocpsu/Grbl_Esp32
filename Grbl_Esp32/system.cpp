@@ -23,6 +23,7 @@
 
 xQueueHandle control_sw_queue;  // used by control switch debouncing
 bool debouncing = false;  // debouncing in process
+uint8_t next_pwm_channel_num = 0;
 
 void system_ini() // Renamed from system_init() due to conflict with esp32 files
 {	
@@ -558,6 +559,15 @@ void system_exec_control_pin(uint8_t pin) {
 		user_defined_macro(CONTROL_PIN_INDEX_MACRO_3); // function must be implemented by user 
 	}
 	#endif 
+}
+
+uint8_t sys_get_next_pwm_channel() {
+	if (next_pwm_channel_num<=MAX_PWM_CHANNEL_NUM) {
+		return next_pwm_channel_num++;
+	}
+	else {
+		grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_ERROR, "Error: out of PWM channels");
+	}
 }
 
 // CoreXY calculation only. Returns x or y-axis "steps" based on CoreXY motor steps.

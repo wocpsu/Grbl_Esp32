@@ -26,6 +26,9 @@ uint32_t spindle_pwm_period; // how many counts in 1 period
 uint32_t spindle_pwm_off_value;
 uint32_t spindle_pwm_min_value;
 uint32_t spindle_pwm_max_value;
+
+uint8_t spindle_pwm_chan_num;
+
 #endif
 
 void spindle_init()
@@ -40,6 +43,8 @@ void spindle_init()
 		#ifdef INVERT_SPINDLE_ENABLE_PIN
 			grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "INVERT_SPINDLE_ENABLE_PIN");
 		#endif
+		
+		spindle_pwm_chan_num = sys_get_next_pwm_channel();
 		
 		// determine how many PWM counts are in eqach PWM cycle
 		spindle_pwm_period = ((1<<SPINDLE_PWM_BIT_PRECISION) -1);
@@ -66,8 +71,8 @@ void spindle_init()
 		#endif		
 		
 		// use the LED control feature to setup PWM   https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/ledc.html
-		ledcSetup(SPINDLE_PWM_CHANNEL, (double)settings.spindle_pwm_freq, SPINDLE_PWM_BIT_PRECISION); // setup the channel
-		ledcAttachPin(SPINDLE_PWM_PIN, SPINDLE_PWM_CHANNEL); // attach the PWM to the pin
+		ledcSetup(spindle_pwm_chan_num, (double)settings.spindle_pwm_freq, SPINDLE_PWM_BIT_PRECISION); // setup the channel
+		ledcAttachPin(SPINDLE_PWM_PIN, spindle_pwm_chan_num); // attach the PWM to the pin
 		
 		// Start with spindle off off
 		spindle_stop();
@@ -80,9 +85,9 @@ void spindle_stop()
 
 	#ifdef SPINDLE_PWM_PIN
 		#ifndef INVERT_SPINDLE_PWM
-			grbl_analogWrite(SPINDLE_PWM_CHANNEL, spindle_pwm_off_value);
+			grbl_analogWrite(spindle_pwm_chan_num, spindle_pwm_off_value);
 		#else
-			grbl_analogWrite(SPINDLE_PWM_CHANNEL, (1<<SPINDLE_PWM_BIT_PRECISION));  // TO DO...wrong for min_pwm
+			grbl_analogWrite(spindle_pwm_chan_num, (1<<SPINDLE_PWM_BIT_PRECISION));  // TO DO...wrong for min_pwm
 		#endif
 	#endif
 }
@@ -94,7 +99,7 @@ uint8_t spindle_get_state()  // returns SPINDLE_STATE_DISABLE, SPINDLE_STATE_CW 
 		return(SPINDLE_STATE_DISABLE);
 	#else
 	
-		if (ledcRead(SPINDLE_PWM_CHANNEL) == 0) // Check the PWM value		
+		if (ledcRead(spindle_pwm_chan_num) == 0) // Check the PWM value		
 			return(SPINDLE_STATE_DISABLE);
 		else
 		{
@@ -123,9 +128,9 @@ void spindle_set_speed(uint32_t pwm_value)
 		#endif
 		
 		#ifndef INVERT_SPINDLE_PWM
-			grbl_analogWrite(SPINDLE_PWM_CHANNEL, pwm_value);		
+			grbl_analogWrite(spindle_pwm_chan_num, pwm_value);		
 		#else
-			grbl_analogWrite(SPINDLE_PWM_CHANNEL, (1<<SPINDLE_PWM_BIT_PRECISION) - pwm_value);
+			grbl_analogWrite(spindle_pwm_chan_num, (1<<SPINDLE_PWM_BIT_PRECISION) - pwm_value);
 		#endif
 		
 	#endif	

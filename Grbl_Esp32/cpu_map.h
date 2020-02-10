@@ -106,11 +106,11 @@
 	#define STEPPERS_DISABLE_PIN GPIO_NUM_13		
 		
 	//#define COOLANT_MIST_PIN   	GPIO_NUM_21
-	#define USER_DIGITAL_PIN_1	GPIO_NUM_21
-	#define USER_DIGITAL_PIN_2	GPIO_NUM_25
+	#define USER_DIGITAL_PIN_1			GPIO_NUM_21
+	#define USER_DIGITAL_PIN_1_MODE		USER_IO_MODE_ON_OFF
+	#define USER_DIGITAL_PIN_2			GPIO_NUM_25
+	#define USER_DIGITAL_PIN_2_MODE		USER_IO_MODE_ON_OFF
 	
-	
-	#define SPINDLE_PWM_CHANNEL 0
 	#define SPINDLE_PWM_BIT_PRECISION 8	
 	#define SPINDLE_ENABLE_PIN	GPIO_NUM_22
 	
@@ -150,7 +150,6 @@
 	#define STEPPERS_DISABLE_PIN GPIO_NUM_12
 			
 	#define SPINDLE_PWM_PIN    GPIO_NUM_19
-	#define SPINDLE_PWM_CHANNEL 0	
 	#define SPINDLE_PWM_BIT_PRECISION 8   // be sure to match this with SPINDLE_PWM_MAX_VALUE	
 	#define SPINDLE_DIR_PIN		GPIO_NUM_18
 	
@@ -196,7 +195,6 @@
 		
 	#define SPINDLE_PWM_PIN    	GPIO_NUM_2
 	#define SPINDLE_ENABLE_PIN	GPIO_NUM_22
-	#define SPINDLE_PWM_CHANNEL 0	
 			
 	// Begin RC ESC Based Spindle Information ======================	
 	#define SPINDLE_PWM_BIT_PRECISION 16   // 16 bit recommended for ESC (don't change)
@@ -279,7 +277,6 @@
 		// If SPINDLE_PWM_PIN is commented out, this frees up the pin, but Grbl will still
 		// use a virtual spindle. Do not comment out the other parameters for the spindle.
 		#define SPINDLE_PWM_PIN    GPIO_NUM_17 // Laser PWM
-		#define SPINDLE_PWM_CHANNEL 0		
 		#define SPINDLE_PWM_BIT_PRECISION 8   // be sure to match this with SPINDLE_PWM_MAX_VALUE
 			
 		
@@ -288,8 +285,7 @@
 		
 		#ifdef USING_SERVO
 			#define USE_SERVO_AXES 
-			#define SERVO_Z_PIN 	GPIO_NUM_27
-			#define SERVO_Z_CHANNEL_NUM 3
+			#define SERVO_Z_PIN 	GPIO_NUM_27			
 			#define SERVO_Z_RANGE_MIN 0
 			#define SERVO_Z_RANGE_MAX 10
 		#endif
@@ -378,7 +374,6 @@
 		#endif
 		
 		#define SERVO_Z_PIN 					GPIO_NUM_27
-		#define SERVO_Z_CHANNEL_NUM 		5
 		#define SERVO_Z_RANGE_MIN			0.0
 		#define SERVO_Z_RANGE_MAX			5.0
 		#define SERVO_Z_HOMING_TYPE		SERVO_HOMING_TARGET // during homing it will instantly move to a target value
@@ -493,7 +488,6 @@
 		// If SPINDLE_PWM_PIN is commented out, this frees up the pin, but Grbl will still
 		// use a virtual spindle. Do not comment out the other parameters for the spindle.
 		#define SPINDLE_PWM_PIN    GPIO_NUM_17 // Laser PWM
-		#define SPINDLE_PWM_CHANNEL 0
 		// PWM Generator is based on 80,000,000 Hz counter
 		// Therefor the freq determines the resolution
 		// 80,000,000 / freq = max resolution
@@ -509,12 +503,12 @@
 		#endif	
 		
 		#define SERVO_Y_PIN 					GPIO_NUM_14
-		#define SERVO_Y_CHANNEL_NUM 	6
+		
 		#define SERVO_Y_RANGE_MIN			0.0
 		#define SERVO_Y_RANGE_MAX			30.0
 		
 		#define SERVO_Z_PIN 					GPIO_NUM_27
-		#define SERVO_Z_CHANNEL_NUM 	5
+		
 		#define SERVO_Z_RANGE_MIN			0.0
 		#define SERVO_Z_RANGE_MAX			20.0
 		
@@ -617,7 +611,6 @@
 		#define SPINDLE_ENABLE_PIN	GPIO_NUM_32
 	#endif
 	
-	#define SPINDLE_PWM_CHANNEL 0	
 	#define SPINDLE_PWM_BIT_PRECISION 8   // be sure to match this with SPINDLE_PWM_MAX_VALUE
 	
 	
@@ -759,7 +752,6 @@
 		#define SPINDLE_ENABLE_PIN	GPIO_NUM_32
 	#endif
 		
-	#define SPINDLE_PWM_CHANNEL 0	
 	#define SPINDLE_PWM_BIT_PRECISION 8   // be sure to match this with SPINDLE_PWM_MAX_VALUE
 	
 	
@@ -839,7 +831,6 @@
 	
 	
 	#define SERVO_Z_PIN 				GPIO_NUM_27
-	#define SERVO_Z_CHANNEL_NUM 		5
 	#define SERVO_Z_RANGE_MIN			0.0
 	#define SERVO_Z_RANGE_MAX			5.0
 	#define SERVO_Z_HOMING_TYPE			SERVO_HOMING_TARGET // during homing it will instantly move to a target value
@@ -850,7 +841,6 @@
 	// Comment out servo pin and uncomment spindle pwm pin to use the servo PWM to control a spindle
 	/*
 	#define SPINDLE_PWM_PIN    GPIO_NUM_27
-	#define SPINDLE_PWM_CHANNEL 0		
 	#define SPINDLE_PWM_BIT_PRECISION 8   // be sure to match this with SPINDLE_PWM_MAX_VALUE
 	*/
 	
@@ -891,7 +881,6 @@
 		// servos
 		#define USE_SERVO_AXES
 		#define SERVO_Z_PIN 			GPIO_NUM_22
-		#define SERVO_Z_CHANNEL_NUM 	6
 		#define SERVO_Z_RANGE_MIN		0.0
 		#define SERVO_Z_RANGE_MAX		5.0
 		#define SERVO_Z_HOMING_TYPE	SERVO_HOMING_TARGET // during homing it will instantly move to a target value
@@ -899,7 +888,6 @@
 		#define SERVO_Z_MPOS				false		// will not use mpos, uses work coordinates
 		
 		#define SERVO_C_PIN 			GPIO_NUM_2
-		#define SERVO_C_CHANNEL_NUM 	7
 		#define SERVO_C_RANGE_MIN		0.0
 		#define SERVO_C_RANGE_MAX		5.0
 		#define SERVO_C_HOMING_TYPE	SERVO_HOMING_TARGET // during homing it will instantly move to a target value
@@ -1049,7 +1037,6 @@
 	
 	#define SPINDLE_PWM_PIN    			GPIO_NUM_25
 	#define SPINDLE_ENABLE_PIN			GPIO_NUM_4
-	#define SPINDLE_PWM_CHANNEL 		0
 	#define SPINDLE_PWM_BIT_PRECISION 	8	
 	
 	#define PROBE_PIN       	GPIO_NUM_22

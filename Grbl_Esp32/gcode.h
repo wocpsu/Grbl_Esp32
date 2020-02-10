@@ -208,7 +208,7 @@ typedef struct {
 typedef struct {
   float f;         // Feed
   float ijk[N_AXIS];    // I,J,K Axis arc offsets
-  uint8_t l;       // G10 or canned cycles parameters
+  uint32_t l;       // G10 or canned cycles parameters
   int32_t n;       // Line number
   float p;         // G10 or dwell parameters
   // float q;      // G82 peck drilling

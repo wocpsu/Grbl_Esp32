@@ -29,23 +29,23 @@
 static TaskHandle_t servosSyncTaskHandle = 0;
 
 #ifdef SERVO_X_PIN
-	ServoAxis X_Servo_Axis(X_AXIS, SERVO_X_PIN, SERVO_X_CHANNEL_NUM);
+	ServoAxis X_Servo_Axis(X_AXIS, SERVO_X_PIN, sys_get_next_pwm_channel());
 #endif
 #ifdef SERVO_Y_PIN
-	ServoAxis Y_Servo_Axis(Y_AXIS, SERVO_Y_PIN, SERVO_Y_CHANNEL_NUM);
+	ServoAxis Y_Servo_Axis(Y_AXIS, SERVO_Y_PIN, sys_get_next_pwm_channel());
 #endif
 #ifdef SERVO_Z_PIN
-	ServoAxis Z_Servo_Axis(Z_AXIS, SERVO_Z_PIN, SERVO_Z_CHANNEL_NUM);
+	ServoAxis Z_Servo_Axis(Z_AXIS, SERVO_Z_PIN, sys_get_next_pwm_channel());
 #endif
 
 #ifdef SERVO_A_PIN
-	ServoAxis A_Servo_Axis(A_AXIS, SERVO_A_PIN, SERVO_A_CHANNEL_NUM);
+	ServoAxis A_Servo_Axis(A_AXIS, SERVO_A_PIN, sys_get_next_pwm_channel());
 #endif
 #ifdef SERVO_B_PIN
-	ServoAxis B_Servo_Axis(B_AXIS, SERVO_B_PIN, SERVO_B_CHANNEL_NUM);
+	ServoAxis B_Servo_Axis(B_AXIS, SERVO_B_PIN, sys_get_next_pwm_channel());
 #endif
 #ifdef SERVO_C_PIN
-	ServoAxis C_Servo_Axis(C_AXIS, SERVO_C_PIN, SERVO_C_CHANNEL_NUM);
+	ServoAxis C_Servo_Axis(C_AXIS, SERVO_C_PIN, sys_get_next_pwm_channel());
 #endif
 
 void init_servos()

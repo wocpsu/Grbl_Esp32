@@ -452,7 +452,7 @@ uint8_t gc_execute_line(char *line, uint8_t client)
 				break;
 			case 'L':
 				word_bit = WORD_L;
-				gc_block.values.l = int_value;
+				gc_block.values.l = (uint32_t)value;
 				break;
 			case 'N':
 				word_bit = WORD_N;
@@ -644,7 +644,7 @@ uint8_t gc_execute_line(char *line, uint8_t client)
 		if (bit_isfalse(value_words,bit(WORD_P))) {
 			FAIL(STATUS_GCODE_VALUE_WORD_MISSING);    // [P word missing]
 		}
-		bit_false(value_words,bit(WORD_P));
+		bit_false(value_words,bit(WORD_P)|bit(WORD_L)); // L word is optional length (duration)
 	}
 
 	// [11. Set active plane ]: N/A
@@ -1251,8 +1251,8 @@ uint8_t gc_execute_line(char *line, uint8_t client)
 
     // turn on/off an i/o pin
 	if ( (gc_block.modal.io_control == NON_MODAL_IO_ENABLE) || (gc_block.modal.io_control == NON_MODAL_IO_DISABLE) ) {
-		if (gc_block.values.p <= MAX_USER_DIGITAL_PIN) {
-			sys_io_control(1<<(int)gc_block.values.p, (gc_block.modal.io_control == NON_MODAL_IO_ENABLE));
+		if (gc_block.values.p <= MAX_USER_DIGITAL_PIN) {			
+			sys_io_control(1<<(int)gc_block.values.p, (gc_block.modal.io_control == NON_MODAL_IO_ENABLE), gc_block.values.l);
 		}
 		else {
 			FAIL(STATUS_P_PARAM_MAX_EXCEEDED);

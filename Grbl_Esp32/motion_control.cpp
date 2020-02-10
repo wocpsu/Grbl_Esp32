@@ -450,7 +450,7 @@ void mc_reset()
     spindle_stop();
     coolant_stop();
 	// turn off all digital I/O
-	sys_io_control(0xFF, false);
+	sys_io_control(0xFF, false, 0);
 		
 		#ifdef ENABLE_SD_CARD
 			// do we need to stop a running SD job?

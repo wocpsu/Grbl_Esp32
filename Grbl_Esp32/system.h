@@ -152,7 +152,7 @@ extern system_t sys;
 #define SPINDLE_STOP_OVR_RESTORE        bit(2)
 #define SPINDLE_STOP_OVR_RESTORE_CYCLE  bit(3)
 
-
+#define MAX_PWM_CHANNEL_NUM 15 // valid pwm_channel nums (0-15)
 
 
 // NOTE: These position variables may need to be declared as volatiles, if problems arise.
@@ -225,7 +225,7 @@ int32_t system_convert_corexy_to_y_axis_steps(int32_t *steps);
 void controlCheckTask(void *pvParameters);
 void system_exec_control_pin(uint8_t pin);
 
-void sys_io_control(uint8_t io_num_mask, bool turnOn);
+uint8_t sys_get_next_pwm_channel();
 
 
 #endif
