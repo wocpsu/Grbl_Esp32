@@ -561,12 +561,13 @@ void system_exec_control_pin(uint8_t pin) {
 	#endif 
 }
 
-uint8_t sys_get_next_pwm_channel() {
+int8_t sys_get_next_pwm_channel() {
 	if (next_pwm_channel_num<=MAX_PWM_CHANNEL_NUM) {
 		return next_pwm_channel_num++;
 	}
 	else {
 		grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_ERROR, "Error: out of PWM channels");
+    return -1;
 	}
 }
 

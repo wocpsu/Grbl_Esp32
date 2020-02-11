@@ -58,8 +58,22 @@ void machine_init() {
 	
 	// setup user io
 	Pin1_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
-	Pin2_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
+    Pin1_UserIoControl.set_spike_length((uint8_t)settings.machine_int16[0]);   // $80
+    Pin1_UserIoControl.set_spike_hold_perecent(100, (uint8_t)settings.machine_float[0]); //  $90
+
+    Pin2_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
+    Pin2_UserIoControl.set_spike_length((uint8_t)settings.machine_int16[1]);   // $81
+    Pin2_UserIoControl.set_spike_hold_perecent(100, (uint8_t)settings.machine_float[1]); //  $91
+
 	Pin3_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
+    Pin3_UserIoControl.set_spike_length((uint8_t)settings.machine_int16[2]);   // $82
+    Pin3_UserIoControl.set_spike_hold_perecent(100, (uint8_t)settings.machine_float[2]); //  $92
+	
+	Pin4_UserIoControl.set_mode(USER_MODE_PWM_LOW_HIGH);
+	Pin4_UserIoControl.set_pwm_freq_bits(50, 16);	
+	Pin4_UserIoControl.set_pwm_low_high(settings.machine_int16[3], (uint16_t)settings.machine_float[3]);
+    Pin4_UserIoControl.init(); // reinit because PWM params changed
+
 	
 	// Calculate the Z offset at the motor zero angles ... 
 	// Z offset is the z distance from the motor axes to the end effector axes at zero angle
@@ -125,13 +139,13 @@ void dxl_sync_position()
     
 	
     float theta1, theta2, theta3;
-    uint8_t axis;
-    bool error = false;
+    //uint8_t axis;
+    //bool error = false;
     bool moved = false;
 	
     float mpos[N_AXIS]; // current machine position
     float last_mpos[N_AXIS]; // last machine position
-    float dxl_z_pos;    
+    //float dxl_z_pos;    
 
     // check if the state has changed    
     if (stepper_idle == dxl_delta_torque_enable_state) {  // they are opposites, so if they are equal change...

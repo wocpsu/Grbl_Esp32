@@ -167,7 +167,7 @@ void settings_restore(uint8_t restore_flag) {
 	settings.machine_int16[4] = DEFAULT_USER_INT_84;
 	
 	// User Integer values
-    settings.machine_float[0] = DEFAULT_USER_FLOAT_90;
+  settings.machine_float[0] = DEFAULT_USER_FLOAT_90;
 	settings.machine_float[1] = DEFAULT_USER_FLOAT_91;
 	settings.machine_float[2] = DEFAULT_USER_FLOAT_92;
 	settings.machine_float[3] = DEFAULT_USER_FLOAT_93;

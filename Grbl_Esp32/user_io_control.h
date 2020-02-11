@@ -1,31 +1,21 @@
 /*
-User I/O is gcode controllable analog output. 
+	user_io_control.h - 
 
-	Could be a standard M62 full on, M63 full off. (On = M62 P1) (Off = M63 P1)
-	Could be a solenoid with a spike level followed by a hold level, then M63 off. 
-	Could pulsed solenoid where M62 does a spike/hold then auto off after a duration.
-	Could be used for Servo positions by setting on/off duty cycles to servo positions. M62 moves servo to one position and M63 move it to another
+	Copyright (c) 2019 Barton Dring @buildlog
+	  
+	 
+	Grbl is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
+	Grbl is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-I/O Types 
-	M62 On ----- M63 Off   
-	M62 On Spike/Hold ----- M63 Off
-	M62 Spike/Hold/DurtionOff
-
-	Parameters
-		PWM Frequency
-		Spike Level (duty percent)
-		Spike Duration (milliseconds)
-		On Level (duty percent) 
-		Off Level (duty percent)
-		Hold Duration (milliseconds)
-		
-		Available Gcode letters
-		P Parameter is which I/O pin
-		L Parameter is Pulse Duration
-		
-		
-		
+	You should have received a copy of the GNU General Public License
+	along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef user_io_control_h
@@ -47,8 +37,8 @@ I/O Types
 #define USER_IO_SPIKE_DURATION	100
 #define USER_IO_HOLD_DURATION   1000
 
-#define USER_MODE_PWM_LOW   20 // not percent actual duty count
-#define USER_MODE_PWM_HIGH   200 // not percent actual duty count
+#define USER_MODE_PWM_LOW   0 // not percent actual duty count
+#define USER_MODE_PWM_HIGH   (1<<USER_IO_PULSE_RES_BITS)-1 // not percent actual duty count
 
 
 
@@ -70,10 +60,11 @@ class UserIoControl{
 		void update(); // updates spike and hold phases
 		
 		void set_mode(uint8_t mode);
+		void set_spike_length(uint16_t length);
 		void set_hold_length(uint32_t length);
-		void set_pwm_freq(uint32_t pwm_freq);
+		void set_pwm_freq_bits(uint32_t pwm_freq, uint8_t bit_num);
 		void set_spike_hold_perecent(uint8_t spike_percent, uint8_t hold_percent);
-		void set_pwm_high_low(uint16_t pwm_duty_low, uint16_t pwm_duty_high);
+		void set_pwm_low_high(uint16_t pwm_duty_low, uint16_t pwm_duty_high);
 		
 	private:
 		uint8_t _gcode_num = 0;
@@ -82,8 +73,9 @@ class UserIoControl{
 		uint8_t _phase = USER_IO_PHASE_NONE;
 		int _channel_num; // The PWM channel
 		bool _isOn = false;
-		uint32_t _pwm_resolution_bits = USER_IO_PULSE_RES_BITS;
+		uint8_t _pwm_resolution_bits = USER_IO_PULSE_RES_BITS;
 		uint32_t _pwm_freq = USER_IO_PULSE_FREQ;
+		uint16_t _spike_length = USER_IO_SPIKE_DURATION;
 		uint32_t _hold_length = USER_IO_HOLD_DURATION;
 		
 		uint16_t _pwm_duty_low = USER_MODE_PWM_LOW;
@@ -98,7 +90,7 @@ class UserIoControl{
 		
 		// ===== functions ==========
 		void _write_pwm(uint32_t duty);
-		uint32_t _write_percent(uint8_t percent);
+		void _write_percent(uint8_t percent);
 		
 		
 		
@@ -116,6 +108,12 @@ class UserIoControl{
 #endif
 #ifdef USER_DIGITAL_PIN_4
 	extern UserIoControl Pin4_UserIoControl;
+#endif
+#ifdef USER_DIGITAL_PIN_5
+	extern UserIoControl Pin5_UserIoControl;
+#endif
+#ifdef USER_DIGITAL_PIN_6
+	extern UserIoControl Pin6_UserIoControl;
 #endif
 
 #endif

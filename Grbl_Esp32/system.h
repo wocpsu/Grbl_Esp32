@@ -225,7 +225,7 @@ int32_t system_convert_corexy_to_y_axis_steps(int32_t *steps);
 void controlCheckTask(void *pvParameters);
 void system_exec_control_pin(uint8_t pin);
 
-uint8_t sys_get_next_pwm_channel();
+int8_t sys_get_next_pwm_channel();
 
 
 #endif

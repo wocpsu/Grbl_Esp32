@@ -69,11 +69,47 @@
 						
 			#define SERVO_MIN_PULSE    (uint16_t)(SERVO_MIN_PULSE_SEC / SERVO_TIME_PER_BIT) // in timer counts
 			0.001 / 0.000003052 
-			3,276.75
+			3276.75
 			
 			#define SERVO_MAX_PULSE    (uint16_t)(SERVO_MAX_PULSE_SEC / SERVO_TIME_PER_BIT) // in timer counts
 			0.002 / 0.000003052 
-			6,553.5‬
+			6553.5‬
+			
+	============== CPU MAPS ==============
+
+	You can do very basic setup via your cpu map.
+	You need to define the pin being used and the mode. You can see the mode types in user_io_control.h
+	All of the other parameter come from defaults in user_io_control.h
+	You can define Pin_1 through Pin_6
+	
+	
+	#define USER_DIGITAL_PIN_1			GPIO_NUM_25
+	#define USER_DIGITAL_PIN_1_MODE	USER_IO_MODE_SPIKE_HOLD_OFF
+	
+	More advanced setups.
+	
+	You can edit the defaults in user_io_control.h, but that makes it harder to stay in sync
+	with firmware updates. The best method is to create a special file for your machine with 
+	a machine_init(). You can adjust all the parameters there.
+	Search the firmware for machine_init() for examples.
+	
+	Example:
+	
+	Pin1_UserIoControl.set_mode(USER_IO_MODE_SPIKE_HOLD_OFF);
+    Pin1_UserIoControl.set_spike_length((uint8_t)settings.machine_int16[0]);   // $80
+    Pin1_UserIoControl.set_spike_hold_perecent(100, (uint8_t)settings.machine_float[0]); //  $90
+	
+	The above example uses settings like $80 and $90 to set some values	
+	If you change PWM frequency or resolution you need to re-init like example below
+	
+	Pin4_UserIoControl.set_mode(USER_MODE_PWM_LOW_HIGH);
+	Pin4_UserIoControl.set_pwm_freq_bits(50, 16);	
+	Pin4_UserIoControl.set_pwm_low_high(settings.machine_int16[3], (uint16_t)settings.machine_float[3]);
+    Pin4_UserIoControl.init(); // reinit because PWM params changed
+	
+	
+	
+	
 */
 
 
@@ -100,11 +136,17 @@ static TaskHandle_t userIoSyncTaskHandle = 0;
 	UserIoControl Pin4_UserIoControl(4, USER_DIGITAL_PIN_4, sys_get_next_pwm_channel(), USER_DIGITAL_PIN_4_MODE);
 #endif
 
+#ifdef USER_DIGITAL_PIN_5
+	UserIoControl Pin3_UserIoControl(5, USER_DIGITAL_PIN_5, sys_get_next_pwm_channel(), USER_DIGITAL_PIN_5_MODE);
+#endif
+
+#ifdef USER_DIGITAL_PIN_6
+	UserIoControl Pin4_UserIoControl(6, USER_DIGITAL_PIN_6, sys_get_next_pwm_channel(), USER_DIGITAL_PIN_6_MODE);
+#endif
+
 
 void user_io_control_init() {
 	bool needsTimer = false;
-	
-	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "User I/O init");
 	
 	#ifdef USER_DIGITAL_PIN_1
 		Pin1_UserIoControl.init();
@@ -124,6 +166,16 @@ void user_io_control_init() {
 	#ifdef USER_DIGITAL_PIN_4
 		Pin4_UserIoControl.init();
 		if (Pin4_UserIoControl.needsTimerUpdates())
+			needsTimer = true;
+	#endif
+	#ifdef USER_DIGITAL_PIN_5
+		Pin5_UserIoControl.init();
+		if (Pin5_UserIoControl.needsTimerUpdates())
+			needsTimer = true;
+	#endif
+	#ifdef USER_DIGITAL_PIN_6
+		Pin6_UserIoControl.init();
+		if (Pin6_UserIoControl.needsTimerUpdates())
 			needsTimer = true;
 	#endif
 	
@@ -157,6 +209,12 @@ void userIoSyncTask(void *pvParameters)
 			#ifdef USER_DIGITAL_PIN_4
 				Pin4_UserIoControl.update();
 			#endif
+			#ifdef USER_DIGITAL_PIN_5
+				Pin5_UserIoControl.update();
+			#endif
+			#ifdef USER_DIGITAL_PIN_6
+				Pin6_UserIoControl.update();
+			#endif
 			vTaskDelay(USER_IO_TASK_DELAY); // sets how often the loop runs
     }
 }
@@ -188,6 +246,18 @@ void sys_io_control(uint8_t io_num_mask, bool turnOn, uint16_t duration) {
 			return;
 		}
 	#endif
+	#ifdef USER_DIGITAL_PIN_5
+		if (io_num_mask & 1<<5) {			
+			Pin5_UserIoControl.on(turnOn, duration);
+			return;
+		}
+	#endif
+	#ifdef USER_DIGITAL_PIN_6
+		if (io_num_mask & 1<<6) {
+			Pin6_UserIoControl.on(turnOn, duration);
+			return;
+		}
+	#endif
 }
 
 
@@ -205,20 +275,20 @@ UserIoControl::UserIoControl(uint8_t gcode_number, int pin_num, uint8_t channel_
 
 void UserIoControl::init()
 {
-	grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "User I/O %d on Pin %d PWM chan %d", _gcode_num, _pin_num, _channel_num);
+	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "User I/O %d on Pin %d PWM chan %d", _gcode_num, _pin_num, _channel_num);
 	switch (_mode) {
 		case USER_IO_MODE_ON_OFF:
 			pinMode(_pin_num, OUTPUT);
 			off();
 			break;
-		default:
+		default:			
 			ledcSetup(_channel_num, _pwm_freq, _pwm_resolution_bits);
 			ledcAttachPin(_pin_num, _channel_num);
 			
 			if (_mode == USER_IO_MODE_SPIKE_HOLD_OFF) {
 				off();
 			} else if (_mode == USER_MODE_PWM_LOW_HIGH) {
-				_write_pwm(USER_MODE_PWM_LOW);
+				_write_pwm(_pwm_duty_low);
 			}
 			
 			break;
@@ -229,15 +299,15 @@ void UserIoControl::init()
 
 void UserIoControl::_write_pwm(uint32_t duty)
 {
-	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "User I/O PWM Duty %d", duty);
+	//grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "User I/O Pin %d PWM Duty %d", _pin_num, duty);
 	if (ledcRead(_channel_num) != duty) { // only write if it is changing    
 		ledcWrite(_channel_num, duty);
 	}
 }
 
-uint32_t UserIoControl::_write_percent(uint8_t percent)
+void UserIoControl::_write_percent(uint8_t percent)
 {
-	uint32_t duty = mapConstrain(percent, 0.0, 100.0 , 0.0, (float)(1<<USER_IO_PULSE_RES_BITS-1));
+	uint32_t duty = mapConstrain(percent, 0.0, 100.0 , 0.0, (float)((1<<USER_IO_PULSE_RES_BITS)-1));
 	_write_pwm(duty);
 }
 
@@ -250,7 +320,7 @@ void UserIoControl::on(bool isOn, uint32_t duration)
 		case USER_IO_MODE_SPIKE_HOLD_OFF:
 			if (isOn) {
 				_phase = USER_IO_PHASE_SPIKE;
-				_spike_end = esp_timer_get_time() + (USER_IO_SPIKE_DURATION * 1000); // The time the spike phase ends
+				_spike_end = esp_timer_get_time() + (_spike_length * 1000); // The time the spike phase ends
 				if (duration == 0) {
 					// continuous hold
 					_hold_end = 0;
@@ -267,6 +337,14 @@ void UserIoControl::on(bool isOn, uint32_t duration)
 			break;
 		case USER_MODE_PWM_LOW_HIGH:
 			if (isOn) {
+				_phase = USER_IO_PHASE_HOLD;
+				if (duration == 0) {
+					_hold_end = 0;
+				}
+				else {
+					// off after duration
+					_hold_end = esp_timer_get_time() + (duration * 1000);
+				}
 				_write_pwm(_pwm_duty_high);
 			}
 			else {
@@ -309,9 +387,13 @@ void UserIoControl::set_mode(uint8_t mode) {
 		_mode = mode;		
 }
 
-void UserIoControl::set_pwm_freq(uint32_t pwm_freq) {
-	if (pwm_freq > 50 && pwm_freq < 10000)
-		_pwm_freq = pwm_freq;		
+void UserIoControl::set_pwm_freq_bits(uint32_t pwm_freq, uint8_t bit_num) 
+{
+	if (pwm_freq >= 50 && pwm_freq <= 10000)
+		_pwm_freq = pwm_freq;
+	if (bit_num >=8 && bit_num <= 16)
+		_pwm_resolution_bits = bit_num;
+
 }
 
 void UserIoControl::set_spike_hold_perecent(uint8_t spike_percent, uint8_t hold_percent)
@@ -320,12 +402,16 @@ void UserIoControl::set_spike_hold_perecent(uint8_t spike_percent, uint8_t hold_
 	_hold_percent = hold_percent;
 }
 
-void UserIoControl::set_pwm_high_low(uint16_t pwm_duty_low, uint16_t pwm_duty_high)
+void UserIoControl::set_pwm_low_high(uint16_t pwm_duty_low, uint16_t pwm_duty_high)
 {	
 	_pwm_duty_low = pwm_duty_low;	
 	_pwm_duty_high = pwm_duty_high;
 }
 
+void UserIoControl::set_spike_length(uint16_t length)
+{
+	_spike_length = length;
+}
 
 void UserIoControl::set_hold_length(uint32_t length)
 {
@@ -334,7 +420,7 @@ void UserIoControl::set_hold_length(uint32_t length)
 
 bool UserIoControl::needsTimerUpdates()
 {
-	return (_mode == USER_IO_MODE_SPIKE_HOLD_OFF);
+	return (_mode == USER_IO_MODE_SPIKE_HOLD_OFF || _mode == USER_MODE_PWM_LOW_HIGH);
 		
 }
 
@@ -346,7 +432,7 @@ void UserIoControl::update()
 		return;
 	
 	// no need to do anything for modes that don't need an update
-	if ( (_mode == USER_IO_MODE_ON_OFF) || (_mode == USER_MODE_PWM_LOW_HIGH) )
+	if (_mode == USER_IO_MODE_ON_OFF)
 		return;	
 	
 	// ====== USER_IO_MODE_SPIKE_HOLD_OFF mode =========
@@ -366,6 +452,19 @@ void UserIoControl::update()
 			}
 			if (esp_timer_get_time() > _hold_end){
 				_write_pwm(0);
+				_isOn = false;
+				return;
+			}	
+		}
+	}
+
+	if (_mode == USER_MODE_PWM_LOW_HIGH) {		
+		if (_phase == USER_IO_PHASE_HOLD) {
+			if (_hold_end == 0) {
+				return;
+			}
+			if (esp_timer_get_time() > _hold_end){
+				_write_pwm(_pwm_duty_low);
 				_isOn = false;
 				return;
 			}	

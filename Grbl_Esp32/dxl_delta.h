@@ -78,6 +78,9 @@
 #define USER_DIGITAL_PIN_3			GPIO_NUM_27
 #define USER_DIGITAL_PIN_3_MODE		USER_IO_MODE_SPIKE_HOLD_OFF
 
+#define USER_DIGITAL_PIN_4			GPIO_NUM_2
+#define USER_DIGITAL_PIN_4_MODE		USER_MODE_PWM_LOW_HIGH
+
 
 // defaults
 #define DEFAULT_STEP_PULSE_MICROSECONDS 3 
@@ -113,7 +116,17 @@
 #define DEFAULT_Y_MAX_TRAVEL 200 // mm NOTE: Must be a positive value.
 #define DEFAULT_Z_MAX_TRAVEL 200 // mm NOTE: Must be a positive value.
 
+// set solenoid defaults
+#define DEFAULT_USER_INT_80 100 // spike duration ms
+#define DEFAULT_USER_FLOAT_90 50 // hold level
+#define DEFAULT_USER_INT_81 100 // spike duration ms
+#define DEFAULT_USER_FLOAT_91 50 // hold level
+#define DEFAULT_USER_INT_82 100 // spike duration ms
+#define DEFAULT_USER_FLOAT_92 50 // hold level
 
+// servo defaults
+#define DEFAULT_USER_INT_83 3276 // servo "off" PWM
+#define DEFAULT_USER_FLOAT_93 6553 // servo "on" PWM
 
 #ifndef dxl_delta_h
     #define dxl_delta_h
