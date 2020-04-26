@@ -132,7 +132,7 @@
 // === Servos
 // To use a servo motor on an axis, do not define step and direction
 // pins for that axis, but instead include a block like this:
-// #define USE_SERVO_AXES
+
 
 // #define SERVO_Z_PIN             GPIO_NUM_22
 // #define SERVO_Z_RANGE_MIN       0.0

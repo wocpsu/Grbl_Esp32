@@ -62,12 +62,9 @@ void setup() {
     stepper_init();  // Configure stepper pins and interrupt timers
     system_ini();   // Configure pinout pins and pin-change interrupt (Renamed due to conflict with esp32 files)
     memset(sys_position, 0, sizeof(sys_position)); // Clear machine position.
-#ifdef USE_PEN_SERVO
-    servo_init();
-#endif
-#ifdef USE_SERVO_AXES
+
     init_servos();
-#endif
+
 #ifdef USE_PEN_SOLENOID
     solenoid_init();
 #endif

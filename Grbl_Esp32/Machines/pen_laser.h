@@ -4,11 +4,6 @@
 
         Pen assignments for the Buildlog.net pen laser controller V1 & V2
 
-        For pen mode be sure to uncomment #define USE_PEN_SERVO in config.h
-        For solenoid  mode be sure to uncomment #define USE_PEN_SERVO in config.h
-        For laser mode, you do not need to change anything
-        Note: You can use all 3 modes at the same time if you want
-
         2019    - Bart Dring
         2020    - Mitch Bradley
 
@@ -53,7 +48,6 @@
 //#define USING_SOLENOID // uncomment to use this feature
 
 #ifdef USING_SERVO
-    #define USE_SERVO_AXES
     #define SERVO_Z_PIN     GPIO_NUM_27
     #define SERVO_Z_RANGE_MIN 0.0
     #define SERVO_Z_RANGE_MAX 10.0

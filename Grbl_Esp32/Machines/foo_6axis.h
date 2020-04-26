@@ -49,7 +49,6 @@
 // C is a servo
 
 // servos
-#define USE_SERVO_AXES
 #define SERVO_Z_PIN             GPIO_NUM_22
 #define SERVO_Z_RANGE_MIN       0.0
 #define SERVO_Z_RANGE_MAX       5.0

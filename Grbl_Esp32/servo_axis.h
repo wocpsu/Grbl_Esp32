@@ -32,7 +32,7 @@
 
 	Usage
 
-	1. In config.h un-comment #define USE_SERVO_AXES
+	
 
 	2. In the machine definition file in Machines/, define servo pins and PWM channels like this ....
 				#define SERVO_Y_PIN 					GPIO_NUM_14
@@ -53,6 +53,8 @@
 
 #ifndef servo_axis_h
 #define servo_axis_h
+
+#include "grbl.h"
 
 
 
@@ -92,11 +94,11 @@ void servosSyncTask(void* pvParameters);
 
 class ServoAxis {
   public:
-    ServoAxis(uint8_t axis, uint8_t pin_num); // constructor
+    ServoAxis(uint8_t axis, uint8_t pin_num, float min, float max); // constructor
     void init();
+    void config_message();
     void set_location();
     void disable(); // sets PWM to 0% duty cycle. Most servos can be manually moved in this state
-    void set_range(float min, float max);
     void set_homing_type(uint8_t homing_type);
     void set_homing_position(float homing_position);
     void set_disable_on_alarm(bool disable_on_alarm);

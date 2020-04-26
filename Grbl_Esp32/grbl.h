@@ -80,10 +80,8 @@
 #endif
 
 #include "solenoid_pen.h"
+#include "servo_axis.h"
 
-#ifdef USE_SERVO_AXES
-    #include "servo_axis.h"
-#endif
 
 #ifdef USE_TRINAMIC
     #include "grbl_trinamic.h"
