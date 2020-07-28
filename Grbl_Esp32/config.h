@@ -319,14 +319,14 @@ Some features should not be changed. See notes below.
 
 // Inverts the spindle enable pin from low-disabled/high-enabled to low-enabled/high-disabled. Useful
 // for some pre-built electronic boards.
-// #define INVERT_SPINDLE_ENABLE_PIN // Default disabled. Uncomment to enable.
+ #define INVERT_SPINDLE_ENABLE_PIN // Default disabled. Uncomment to enable.
 
 // Inverts the spindle PWM output pin from low-disabled/high-enabled to low-enabled/high-disabled.
 // #define INVERT_SPINDLE_OUTPUT_PIN // Default disabled. Uncomment to enable.
 
 // Inverts the selected coolant pin from low-disabled/high-enabled to low-enabled/high-disabled. Useful
 // for some pre-built electronic boards.
-// #define INVERT_COOLANT_FLOOD_PIN // Default disabled. Uncomment to enable.
+ #define INVERT_COOLANT_FLOOD_PIN // Default disabled. Uncomment to enable.
 // #define INVERT_COOLANT_MIST_PIN // Default disabled. Note: Enable M7 mist coolant in config.h
 
 // When Grbl powers-cycles or is hard reset with the Arduino reset button, Grbl boots up with no ALARM

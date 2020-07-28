@@ -114,6 +114,19 @@
         #define DEFAULT_HOMING_PULLOFF 1.0 // $27 mm
     #endif
 
+    // =========== THC Stuff ===================
+	#ifndef  DEFAULT_THCDEBUG
+        #define DEFAULT_THCDEBUG 0 // Boolean //If true this will print torch height debug information out
+    #endif
+	
+	#ifndef  DEFAULT_THCVOLTAGE
+        #define DEFAULT_THCVOLTAGE 0 // Volts // default target voltage (a real value would be 100 volts)
+    #endif
+	
+	#ifndef  DEFAULT_THCDEBUGPRINT_MILLIS
+        #define DEFAULT_THCDEBUGPRINT_MILLIS 1000 //milliseconds // debug print time in milliseconds
+    #endif
+    
     // ======== SPINDLE STUFF ====================
     #ifndef SPINDLE_TYPE
         #define SPINDLE_TYPE SPINDLE_TYPE_NONE

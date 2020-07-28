@@ -38,7 +38,7 @@ typedef struct {
     uint8_t is_pwm_rate_adjusted; // Tracks motions that require constant laser power/rate
 } st_block_t;
 static st_block_t st_block_buffer[SEGMENT_BUFFER_SIZE - 1];
-
+uint32_t stepZTHC; //Torch Height Control Step Bit
 // Primary stepper segment ring buffer. Contains small, short line segments for the stepper
 // algorithm to execute, which are "checked-out" incrementally from the first block in the
 // planner buffer. Once "checked-out", the steps in the segments buffer cannot be modified by
@@ -330,7 +330,7 @@ static void stepper_pulse_func() {
             sys_position[Y_AXIS]++;
     }
 #ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
-    st.counter_z += st.steps[Z_AXIS];
+    st.counter_z += st.steps[Z_AXIS] | stepZTHC;
 #else
     st.counter_z += st.exec_block->steps[Z_AXIS];
 #endif
