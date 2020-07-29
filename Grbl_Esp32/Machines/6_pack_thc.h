@@ -8,6 +8,7 @@
     2018    - Bart Dring
     2020    - Mitch Bradley
     2020    - Michiyasu Odaki
+	2020    - William Curry 
     Grbl_ESP32 is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -18,6 +19,7 @@
     GNU General Public License for more details.
     You should have received a copy of the GNU General Public License
     along with Grbl_ESP32.  If not, see <http://www.gnu.org/licenses/>.
+	This 6-Pack Torch Height Control Custom File Was Created By: William Curry
 */
 #define MACHINE_NAME            "6 Pack Controller with Plasma Torch Height Control"
 #define CUSTOM_CODE_FILENAME "Custom/torchHeightControl.cpp"//define the torch height control custom code file
@@ -31,7 +33,7 @@
 #endif
 
 #define DEFAULT_THCDEBUG 1    // Boolean //If true this will print torch height debug information out
-#define DEFAULT_THCVOLTAGE 0  // Volts // default target voltage (a real value would be 100 volts) 0 turns off the THC
+#define DEFAULT_THCVOLTAGE 0  // Volts // default target voltage (a real value would be 100 volts) less than 30 turns off the THC
 #define DEFAULT_THCDEBUGPRINT_MILLIS 1000  //milliseconds // debug print time in milliseconds
 // === Special Features
 
@@ -41,7 +43,7 @@
 // (there will be a delay between the specified I/O operation and the actual I/O execution)
 #define USE_I2S_OUT_STREAM
 #undef USE_RMT_STEPS
-
+#define STEP_PULSE_DELAY 10 //Mircoseconds to delay between setting direction pin and setting step pin high
 //#define USE_STEPSTICK   //Bill comment makes sure MS1,2,3 !reset and !sleep are set
 
 #define I2S_OUT_BCK      GPIO_NUM_22
@@ -90,6 +92,10 @@
 //#define C_LIMIT_PIN             GPIO_NUM_36
 
 #define PROBE_PIN               GPIO_NUM_25
+#define THC_VOLTAGE_PIN         GPIO_NUM_5
+///Resistance Values needed to determine arc voltage i.e. Vout = (Vs*R2)/(R1+R2)
+#define VOLTAGE_DIVIDER_R1      470 ///470K Ohms
+#define VOLTAGE_DIVIDER_R2      7.6 ///7.6K Ohms
 
 
 // 0-10v CNC Module in Socket #3
@@ -129,6 +135,7 @@
 #define HUANYANG_RTS_PIN        GPIO_NUM_4
 #define HUANYANG_RXD_PIN        GPIO_NUM_16
 */
-void THCSyncTask(void* pvParameters);
+void THCSyncTask(void* pvParameters); //Task called for Torch height controlled thats defined in torchHeightControl.cpp
+void THCVoltageTask(void* pvParameters); //Task called for Torch height controlled thats defined in torchHeightControl.cpp
 // === Default settings
 #define DEFAULT_STEP_PULSE_MICROSECONDS I2S_OUT_USEC_PER_PULSE

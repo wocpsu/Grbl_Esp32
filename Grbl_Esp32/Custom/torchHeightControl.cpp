@@ -21,48 +21,59 @@
 	--------------------------------------------------------------
 
  	This contains all the special features required for "Plasma Torch Height Control"
+	This Torch Height Control Custom File Was Created By: William Curry
 */
-// This file is enabled by defining CUSTOM_CODE_FILENAME "torchHeightControl.cpp"
-// in Machines/torchHeightControl.h, thus causing this file to be included
+// This file is enabled by defining: CUSTOM_CODE_FILENAME "Custom/torchHeightControl.cpp"
+// in Machines/6_pack_thc.h, thus causing this file to be included
 // from ../custom_code.cpp
-extern uint32_t stepZTHC;
 static TaskHandle_t THCSyncTaskHandle = 0;
-unsigned long THCCounter = 0;
-bool debugTHC = true;
-unsigned long lastDebugPrintTimeMillis;
-unsigned long arcOnTime;
-unsigned long arcDelayTime = 250; //How long to wait before starting THC routine and voltage filtering in milliseconds
-float torchFilterValue = 0.75;
-float torchVoltageFiltered;
+static TaskHandle_t THCVoltageTaskHandle = 0;
+unsigned long THCCounter = 0; //For debugging only
+unsigned long lastDebugPrintTimeMillis; //For debugging only, last time debug info was printed
+unsigned long arcOnTime; //milliseconds at which plasma arc was turned on
+unsigned long arcDelayTime = 250; //How long to wait before starting THC routine and voltage filtering in milliseconds #########
+float torchFilterValue = 0.75; //Torch Volatage Filter, a higher value represents more filtering on the volatage signal ########
+float torchVoltageFiltered; ///Current filtered value used for THC routine
+bool thcRunning;
 
 void thcStepZDown(){
 		if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
 		{
-            grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Voltage = %d Moving Z Down\n", torchVoltageFiltered);
+            grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Setpoint = %d THC Voltage = %d Moving Z Down\n", thc_voltage_setting -> get(), torchVoltageFiltered);
 		    lastDebugPrintTimeMillis = millis();
 		}
-        //digitalWrite(Z_STEP_PIN, (onMask & bit(Z_AXIS)));
+        //Set Z Direction Pin
+        digitalWrite(Z_DIRECTION_PIN,0);  
+        delay_ms(STEP_PULSE_DELAY); ///Delay setting the step pin high
+        //Pulse Z Step Pin High
+        digitalWrite(Z_STEP_PIN,1);
+        delay_ms(pulse_microseconds->get()); //Leave Step pin high for 10ms
+        //Pulse Z Step Pin Low
+        digitalWrite(Z_STEP_PIN,0); 
+        sys_position[Z_AXIS]--;
 }
 
 void thcStepZUp(){
 		if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
 		{
-            grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Voltage = %d Moving Z Up\n", torchVoltageFiltered);
+            grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Setpoint = %d THC Voltage = %d Moving Z Up\n", thc_voltage_setting -> get(), torchVoltageFiltered);
 		    lastDebugPrintTimeMillis = millis();
 		}
-        stepZTHC = 1;
+        //Set Z Direction Pin
+        digitalWrite(Z_DIRECTION_PIN,1);  
+        delay_ms(STEP_PULSE_DELAY); ///Delay setting the step pin high
+        //Pulse Z Step Pin
+        digitalWrite(Z_STEP_PIN,1);
+        //Pulse Z Step Pin High
+        delay_ms(pulse_microseconds->get()); //Leave Step pin high for 10ms
+        digitalWrite(Z_STEP_PIN,0); 
+        //Pulse Z Step Pin Low
+        sys_position[Z_AXIS]++;
 
 }
 
 void machine_init() {
-    //solenoid_pull_count = 0; // initialize
     grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Bill's THC Initialized");
-    // setup PWM channel
-    //solenoid_pwm_chan_num = sys_get_next_PWM_chan_num();
-    //ledcSetup(solenoid_pwm_chan_num, SOLENOID_PWM_FREQ, SOLENOID_PWM_RES_BITS);
-    //ledcAttachPin(SOLENOID_PEN_PIN, solenoid_pwm_chan_num);
-    //pinMode(SOLENOID_DIRECTION_PIN, OUTPUT); // this sets the direction of the solenoid current
-    //pinMode(REED_SW_PIN, INPUT_PULLUP);		 // external pullup required
     // setup a task that will do torch height control
     xTaskCreatePinnedToCore(THCSyncTask,   // task
                             "THCSyncTask", // name for task
@@ -72,44 +83,40 @@ void machine_init() {
                             &THCSyncTaskHandle,
                             0 // core
                            );
+	// setup a task that will filter the torch voltage
+    xTaskCreatePinnedToCore(THCVoltageTask,   // task
+                            "THCVoltageTask", // name for task
+                            4096,				// size of task stack
+                            NULL,				// parameters
+                            1,					// priority
+                            &THCVoltageTaskHandle,
+                            0 // core
+                           );
 }
 
-// this task tracks the Z position and sets the solenoid
+// this task is the main THC loop
 void THCSyncTask(void* pvParameters) {
-    int32_t current_position[N_AXIS]; // copy of current location
-    float m_pos[N_AXIS];			  // machine position in mm
-    TickType_t xLastWakeTime;
-    const TickType_t xTHCFrequency = 50; // in ticks (typically ms)
-    xLastWakeTime = xTaskGetTickCount(); // Initialise the xLastWakeTime variable with the current time.
-    while (true) {
-        // don't ever return from this or the task dies
-		unsigned long voltageInt = analogRead(5);
-		float torchVoltage = voltageInt * (3.3/4095);
+    TickType_t xthcWakeTime;
+    const TickType_t xTHCFrequency = 10; // in ticks (typically ms)
+    xthcWakeTime = xTaskGetTickCount(); // Initialise the xthcWakeTime variable with the current time.
+    while (true) { // don't ever return from this or the task dies
+        //Get the state of the plasma cutter torch on relay
         uint8_t plasmaState = coolant_get_state(); //Using the coolant flood output to turn on the plasma cutter
-        if(plasmaState) ///Plasma Has Been Turned On, Start THC Routine
+        if(plasmaState && (thc_voltage_setting -> get() > 30)) ///Plasma Has Been Turned On and the Voltage Setpoint is greater than 30 volts Start The THC Routine
         {
-            if((millis()- arcOnTime) >arcDelayTime)
+            if((millis()- arcOnTime) > arcDelayTime)
             {
-                torchVoltageFiltered = torchVoltageFiltered * (torchFilterValue) + torchVoltage * (1-torchFilterValue); //Rough filter for voltage input
-                if(torchVoltageFiltered > thc_voltage_setting -> get()) //Voltage is too high step Z down
-                {
-                    thcStepZDown();
-                }
-                else if(torchVoltageFiltered < thc_voltage_setting -> get()) //Voltage is too low step Z up
-                {
-                    thcStepZUp();
-                }
-                
+				thcRunning = true;                
             }
             else
             {
-                torchVoltageFiltered = torchVoltage;
+				thcRunning = false;
             }
         }
         else
         {
-            torchVoltageFiltered = torchVoltage;
             arcOnTime = millis();
+			thcRunning = false;
             if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
             {
                 grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Interation # %d\n", THCCounter);
@@ -117,19 +124,40 @@ void THCSyncTask(void* pvParameters) {
                 lastDebugPrintTimeMillis = millis();
             }
         }
-        
-        memcpy(current_position, sys_position, sizeof(sys_position)); // get current position in step
-        system_convert_array_steps_to_mpos(m_pos, current_position);  // convert to millimeters
+	    
+		if((torchVoltageFiltered > thc_voltage_setting -> get()) && thcRunning) //Voltage is too high and were running THC step Z down
+        {
+            thcStepZDown();
+        }
+        else if((torchVoltageFiltered < thc_voltage_setting -> get())&& thcRunning) //Voltage is too low and were running THC  step Z up
+        {
+            thcStepZUp();
+        }
+		
         THCCounter ++;
+		
+        vTaskDelayUntil(&xthcWakeTime, xTHCFrequency);
+    }
+}
 
-        //calc_solenoid(m_pos[Z_AXIS]);								  // calculate kinematics and move the servos
-/* 		    sprintf(gcode_line, "G0Z%3.2f\r", ATARI_TOOL_CHANGE_Z); // go to tool change height
-			inputBuffer.push(gcode_line);
-			for (uint8_t i = 0; i < move_count; i++) {
-				sprintf(gcode_line, "G0X%3.2f\r", ATARI_HOME_POS); //
-				inputBuffer.push(gcode_line);
-				inputBuffer.push("G0X0\r");
-			} */
-        vTaskDelayUntil(&xLastWakeTime, xTHCFrequency);
+// this task is THC Voltage Filter Loop
+void THCVoltageTask(void* pvParameters) {
+    TickType_t xLastVoltageWakeTime;
+    const TickType_t xTHCVoltageFrequency = 10; // in ticks (typically ms)
+    xLastVoltageWakeTime = xTaskGetTickCount(); // Initialise the xLastVoltageWakeTime variable with the current time.
+    while (true) {
+        // don't ever return from this or the task dies
+		unsigned long voltageInt = analogRead(THC_VOLTAGE_PIN);
+		float thcPinVoltage = voltageInt * (3.3/4095); //0-3.3 volts at torch input pin
+		float torchVoltage =  (thcPinVoltage*(VOLTAGE_DIVIDER_R1+VOLTAGE_DIVIDER_R2))/VOLTAGE_DIVIDER_R1;//0-207 volts
+        if(thcRunning) ///If the Main THC Loop is running Start filtering the voltage
+        {
+           torchVoltageFiltered = torchVoltageFiltered * (torchFilterValue) + torchVoltage * (1-torchFilterValue); //Rough filter for voltage input
+        }
+        else
+        {
+            torchVoltageFiltered = torchVoltage;
+        }
+        vTaskDelayUntil(&xLastVoltageWakeTime, xTHCVoltageFrequency);
     }
 }
