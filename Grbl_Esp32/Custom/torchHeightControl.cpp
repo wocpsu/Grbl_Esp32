@@ -31,10 +31,9 @@ static TaskHandle_t THCVoltageTaskHandle = 0;
 unsigned long THCCounter = 0; //For debugging only
 unsigned long lastDebugPrintTimeMillis; //For debugging only, last time debug info was printed
 unsigned long arcOnTime; //milliseconds at which plasma arc was turned on
-unsigned long arcDelayTime = 250; //How long to wait before starting THC routine and voltage filtering in milliseconds #########
-float torchFilterValue = 0.75; //Torch Volatage Filter, a higher value represents more filtering on the volatage signal ########
 float torchVoltageFiltered; ///Current filtered value used for THC routine
 bool thcRunning;
+int thcIterationMs = 10;
 
 void thcStepZDown(){
 		if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
@@ -97,14 +96,14 @@ void machine_init() {
 // this task is the main THC loop
 void THCSyncTask(void* pvParameters) {
     TickType_t xthcWakeTime;
-    const TickType_t xTHCFrequency = 10; // in ticks (typically ms)
+    const TickType_t xTHCFrequency = (thc_iter_freq -> get()); // in ticks (typically ms)
     xthcWakeTime = xTaskGetTickCount(); // Initialise the xthcWakeTime variable with the current time.
     while (true) { // don't ever return from this or the task dies
         //Get the state of the plasma cutter torch on relay
         uint8_t plasmaState = coolant_get_state(); //Using the coolant flood output to turn on the plasma cutter
         if(plasmaState && (thc_voltage_setting -> get() > 30)) ///Plasma Has Been Turned On and the Voltage Setpoint is greater than 30 volts Start The THC Routine
         {
-            if((millis()- arcOnTime) > arcDelayTime)
+            if((millis()- arcOnTime) > (thc_arc_delay_time->get()))
             {
 				thcRunning = true;                
             }
@@ -136,7 +135,7 @@ void THCSyncTask(void* pvParameters) {
 		
         THCCounter ++;
 		
-        vTaskDelayUntil(&xthcWakeTime, xTHCFrequency);
+        vTaskDelayUntil(&xthcWakeTime, (thc_iter_freq -> get()));
     }
 }
 
@@ -152,7 +151,7 @@ void THCVoltageTask(void* pvParameters) {
 		float torchVoltage =  (thcPinVoltage*(VOLTAGE_DIVIDER_R1+VOLTAGE_DIVIDER_R2))/VOLTAGE_DIVIDER_R1;//0-207 volts
         if(thcRunning) ///If the Main THC Loop is running Start filtering the voltage
         {
-           torchVoltageFiltered = torchVoltageFiltered * (torchFilterValue) + torchVoltage * (1-torchFilterValue); //Rough filter for voltage input
+           torchVoltageFiltered = torchVoltageFiltered * (thc_voltage_filter_value -> get()) + torchVoltage * (1-(thc_voltage_filter_value -> get())); //Rough filter for voltage input
         }
         else
         {

@@ -32,9 +32,14 @@
     #define ENABLE_SD_CARD
 #endif
 
-#define DEFAULT_THCDEBUG 1    // Boolean //If true this will print torch height debug information out
-#define DEFAULT_THCVOLTAGE 0  // Volts // default target voltage (a real value would be 100 volts) less than 30 turns off the THC
-#define DEFAULT_THCDEBUGPRINT_MILLIS 1000  //milliseconds // debug print time in milliseconds
+#define DEFAULT_THC_DEBUG 1 // Boolean //If true this will print torch height debug information out
+#define DEFAULT_THC_TARGET_VOLTAGE 0 // Volts // default target voltage (a real value would be 100 volts)
+#define DEFAULT_THC_DEBUG_PRINT_MILLIS 1000 //milliseconds // debug print time in milliseconds
+#define DEFAULT_THC_ARC_DELAY_TIME 250 //milliseconds // Time for Arc to Start before running THC
+#define DEFAULT_THC_VOLTAGE_FILTER_VALUE 0.5 //ND// Torch Voltage Filter Time Constant
+#define DEFAULT_THC_ITER_FREQ 20 //milliseconds// Torch Height Control Time Between Calls, this will directly effect ...
+// ... the rate at which the Z axis moves, the machine must be restarted after changing this for it to take effect
+
 // === Special Features
 
 // I2S (steppers & other output-only pins)
