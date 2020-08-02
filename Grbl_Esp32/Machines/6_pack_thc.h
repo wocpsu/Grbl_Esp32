@@ -23,6 +23,8 @@
 */
 #define MACHINE_NAME            "6 Pack Controller with Plasma Torch Height Control"
 #define CUSTOM_CODE_FILENAME "Custom/torchHeightControl.cpp"//define the torch height control custom code file
+// tells grbl we have some special functions to call
+#define USE_MACHINE_INIT
 #ifdef N_AXIS
         #undef N_AXIS
 #endif
@@ -31,13 +33,13 @@
 #ifndef ENABLE_SD_CARD
     #define ENABLE_SD_CARD
 #endif
-
-#define DEFAULT_THC_DEBUG 1 // Boolean //If true this will print torch height debug information out
-#define DEFAULT_THC_TARGET_VOLTAGE 0 // Volts // default target voltage (a real value would be 100 volts)
-#define DEFAULT_THC_DEBUG_PRINT_MILLIS 1000 //milliseconds // debug print time in milliseconds
-#define DEFAULT_THC_ARC_DELAY_TIME 250 //milliseconds // Time for Arc to Start before running THC
-#define DEFAULT_THC_VOLTAGE_FILTER_VALUE 0.5 //ND// Torch Voltage Filter Time Constant
-#define DEFAULT_THC_ITER_FREQ 20 //milliseconds// Torch Height Control Time Between Calls, this will directly effect ...
+#define SHOW_EXTENDED_SETTINGS
+#define DEFAULT_THC_DEBUG 1 //$300=1// Boolean //If true this will print torch height debug information out
+#define DEFAULT_THC_DEBUG_PRINT_MILLIS 5000 //$301=5000//milliseconds // debug print time in milliseconds
+#define DEFAULT_THC_TARGET_VOLTAGE 0 //$302=0// Volts // default target voltage (a real value would be 100 volts)
+#define DEFAULT_THC_ARC_DELAY_TIME 500 //$303=500//milliseconds // Time for Arc to Start before running THC
+#define DEFAULT_THC_VOLTAGE_FILTER_VALUE 0.98 //$304=0.98//ND// Torch Voltage Filter Time Constant
+#define DEFAULT_THC_ITER_FREQ 5 //$305=5//milliseconds// Torch Height Control Time Between Calls, this will directly effect ...
 // ... the rate at which the Z axis moves, the machine must be restarted after changing this for it to take effect
 
 // === Special Features
@@ -50,6 +52,9 @@
 #undef USE_RMT_STEPS
 #define STEP_PULSE_DELAY 10 //Mircoseconds to delay between setting direction pin and setting step pin high
 //#define USE_STEPSTICK   //Bill comment makes sure MS1,2,3 !reset and !sleep are set
+#ifdef ENABLE_WIFI
+ #undef ENABLE_WIFI ///Turn off wifi since this blocks the ADC Channel 2 Pins from Reading in Voltage Which is needed for THC
+#endif
 
 #define I2S_OUT_BCK      GPIO_NUM_22
 #define I2S_OUT_WS       GPIO_NUM_17
@@ -96,8 +101,8 @@
 //#define B_LIMIT_PIN             GPIO_NUM_39
 //#define C_LIMIT_PIN             GPIO_NUM_36
 
-#define PROBE_PIN               GPIO_NUM_25
-#define THC_VOLTAGE_PIN         GPIO_NUM_5
+#define PROBE_PIN               GPIO_NUM_34
+#define THC_VOLTAGE_PIN         GPIO_NUM_39
 ///Resistance Values needed to determine arc voltage i.e. Vout = (Vs*R2)/(R1+R2)
 #define VOLTAGE_DIVIDER_R1      470 ///470K Ohms
 #define VOLTAGE_DIVIDER_R2      7.6 ///7.6K Ohms

@@ -31,14 +31,17 @@ static TaskHandle_t THCVoltageTaskHandle = 0;
 unsigned long THCCounter = 0; //For debugging only
 unsigned long lastDebugPrintTimeMillis; //For debugging only, last time debug info was printed
 unsigned long arcOnTime; //milliseconds at which plasma arc was turned on
-float torchVoltageFiltered; ///Current filtered value used for THC routine
 bool thcRunning;
 int thcIterationMs = 10;
-
+float thcPinVoltage;
+float torchVoltage;
+float torchVoltageFiltered; ///Current filtered value used for THC routine
+float  voltageSetpoint;
+int32_t voltageInt;
 void thcStepZDown(){
 		if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
 		{
-            grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Setpoint = %d THC Voltage = %d Moving Z Down\n", thc_voltage_setting -> get(), torchVoltageFiltered);
+            grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Setpoint = %4.1f THC Voltage = %4.1f Moving Z Down", voltageSetpoint, torchVoltageFiltered);
 		    lastDebugPrintTimeMillis = millis();
 		}
         //Set Z Direction Pin
@@ -55,7 +58,7 @@ void thcStepZDown(){
 void thcStepZUp(){
 		if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
 		{
-            grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Setpoint = %d THC Voltage = %d Moving Z Up\n", thc_voltage_setting -> get(), torchVoltageFiltered);
+            grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Setpoint = %4.1f THC Voltage = %4.1f Moving Z Up", voltageSetpoint, torchVoltageFiltered);
 		    lastDebugPrintTimeMillis = millis();
 		}
         //Set Z Direction Pin
@@ -72,7 +75,7 @@ void thcStepZUp(){
 }
 
 void machine_init() {
-    grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "Bill's THC Initialized");
+    grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "Bill's THC Initialized");
     // setup a task that will do torch height control
     xTaskCreatePinnedToCore(THCSyncTask,   // task
                             "THCSyncTask", // name for task
@@ -101,7 +104,11 @@ void THCSyncTask(void* pvParameters) {
     while (true) { // don't ever return from this or the task dies
         //Get the state of the plasma cutter torch on relay
         uint8_t plasmaState = coolant_get_state(); //Using the coolant flood output to turn on the plasma cutter
-        if(plasmaState && (thc_voltage_setting -> get() > 30)) ///Plasma Has Been Turned On and the Voltage Setpoint is greater than 30 volts Start The THC Routine
+		if(sys.suspend)
+		{
+			coolant_set_state(COOLANT_DISABLE);
+		}
+        if(plasmaState && (voltageSetpoint > 30) && !sys.suspend) ///Plasma Has Been Turned On and the Voltage Setpoint is greater than 30 volts Start The THC Routine
         {
             if((millis()- arcOnTime) > (thc_arc_delay_time->get()))
             {
@@ -118,37 +125,41 @@ void THCSyncTask(void* pvParameters) {
 			thcRunning = false;
             if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
             {
-                grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Interation # %d\n", THCCounter);
-                grbl_msg_sendf(CLIENT_SERIAL, MSG_LEVEL_INFO, "THC Voltage = %d\n", torchVoltageFiltered);
+                //grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Interation # %d", THCCounter);
+                grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Voltage Filt = %4.1f", torchVoltageFiltered);
+                grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Voltage Unfiltered = %4.1f", torchVoltage);
+                grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Pin Voltage = %3.2f", thcPinVoltage);
+                grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Voltage Setting = %4.1f", voltageSetpoint);
                 lastDebugPrintTimeMillis = millis();
             }
         }
 	    
-		if((torchVoltageFiltered > thc_voltage_setting -> get()) && thcRunning) //Voltage is too high and were running THC step Z down
+		if((torchVoltageFiltered > voltageSetpoint) && thcRunning) //Voltage is too high and were running THC step Z down
         {
             thcStepZDown();
         }
-        else if((torchVoltageFiltered < thc_voltage_setting -> get())&& thcRunning) //Voltage is too low and were running THC  step Z up
+        else if((torchVoltageFiltered < voltageSetpoint)&& thcRunning) //Voltage is too low and were running THC  step Z up
         {
             thcStepZUp();
         }
 		
         THCCounter ++;
+		voltageSetpoint = (thc_voltage_setting -> get());
 		
-        vTaskDelayUntil(&xthcWakeTime, (thc_iter_freq -> get()));
+        vTaskDelayUntil(&xthcWakeTime, (thc_iter_freq -> get())+ 1);
     }
 }
 
 // this task is THC Voltage Filter Loop
 void THCVoltageTask(void* pvParameters) {
     TickType_t xLastVoltageWakeTime;
-    const TickType_t xTHCVoltageFrequency = 10; // in ticks (typically ms)
+    const TickType_t xTHCVoltageFrequency = 20; // in ticks (typically ms)
     xLastVoltageWakeTime = xTaskGetTickCount(); // Initialise the xLastVoltageWakeTime variable with the current time.
     while (true) {
         // don't ever return from this or the task dies
-		unsigned long voltageInt = analogRead(THC_VOLTAGE_PIN);
-		float thcPinVoltage = voltageInt * (3.3/4095); //0-3.3 volts at torch input pin
-		float torchVoltage =  (thcPinVoltage*(VOLTAGE_DIVIDER_R1+VOLTAGE_DIVIDER_R2))/VOLTAGE_DIVIDER_R1;//0-207 volts
+		voltageInt = analogRead(THC_VOLTAGE_PIN);
+		thcPinVoltage = voltageInt * (3.3 / 4095); //0-3.3 volts at torch input pin
+		torchVoltage =  (thcPinVoltage*(VOLTAGE_DIVIDER_R1+VOLTAGE_DIVIDER_R2))/VOLTAGE_DIVIDER_R2;//0-207 volts
         if(thcRunning) ///If the Main THC Loop is running Start filtering the voltage
         {
            torchVoltageFiltered = torchVoltageFiltered * (thc_voltage_filter_value -> get()) + torchVoltage * (1-(thc_voltage_filter_value -> get())); //Rough filter for voltage input
@@ -157,6 +168,6 @@ void THCVoltageTask(void* pvParameters) {
         {
             torchVoltageFiltered = torchVoltage;
         }
-        vTaskDelayUntil(&xLastVoltageWakeTime, xTHCVoltageFrequency);
+        vTaskDelayUntil(&xLastVoltageWakeTime, xTHCVoltageFrequency + 1);
     }
 }

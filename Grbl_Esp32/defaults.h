@@ -136,7 +136,7 @@
         //...filtering on the volatage signal
     #endif	
 	
-	#ifndef  DEFAULT_THC_VOLTAGE_FILTER_VALUE
+	  #ifndef  DEFAULT_THC_ITER_FREQ
         #define DEFAULT_THC_ITER_FREQ 20 //milliseconds// Torch Height Control Time Between Calls, this will directly effect ...
 		// ... the rate at which the Z axis moves, the machine must be restarted after changing this
     #endif	
