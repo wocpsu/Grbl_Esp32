@@ -79,7 +79,7 @@ Some features should not be changed. See notes below.
 #define ENABLE_CONTROL_SW_DEBOUNCE // Default disabled. Uncomment to enable.
 #define CONTROL_SW_DEBOUNCE_PERIOD 32 // in milliseconds default 32 microseconds
 
-#define USE_RMT_STEPS
+//#define USE_RMT_STEPS
 
 // Include the file that loads the machine-specific config file.
 // machine.h must be edited to choose the desired file.
@@ -326,7 +326,7 @@ Some features should not be changed. See notes below.
 
 // Inverts the selected coolant pin from low-disabled/high-enabled to low-enabled/high-disabled. Useful
 // for some pre-built electronic boards.
- #define INVERT_COOLANT_FLOOD_PIN // Default disabled. Uncomment to enable.
+// #define INVERT_COOLANT_FLOOD_PIN // Default disabled. Uncomment to enable.
 // #define INVERT_COOLANT_MIST_PIN // Default disabled. Note: Enable M7 mist coolant in config.h
 
 // When Grbl powers-cycles or is hard reset with the Arduino reset button, Grbl boots up with no ALARM

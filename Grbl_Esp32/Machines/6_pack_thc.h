@@ -33,11 +33,12 @@
 #ifndef ENABLE_SD_CARD
     #define ENABLE_SD_CARD
 #endif
+///Additional THC Setting, these can be displayed in G Code Sender by Typing $S or $+ to show numbers like shown below
 #define SHOW_EXTENDED_SETTINGS
 #define DEFAULT_THC_DEBUG 1 //$300=1// Boolean //If true this will print torch height debug information out
-#define DEFAULT_THC_DEBUG_PRINT_MILLIS 5000 //$301=5000//milliseconds // debug print time in milliseconds
+#define DEFAULT_THC_DEBUG_PRINT_MILLIS 5000 //$301=1000//milliseconds // debug print time in milliseconds
 #define DEFAULT_THC_TARGET_VOLTAGE 0 //$302=0// Volts // default target voltage (a real value would be 100 volts)
-#define DEFAULT_THC_ARC_DELAY_TIME 500 //$303=500//milliseconds // Time for Arc to Start before running THC
+#define DEFAULT_THC_ARC_DELAY_TIME 500 //$303=750//milliseconds // Time for Arc to Start before running THC
 #define DEFAULT_THC_VOLTAGE_FILTER_VALUE 0.98 //$304=0.98//ND// Torch Voltage Filter Time Constant
 #define DEFAULT_THC_ITER_FREQ 5 //$305=5//milliseconds// Torch Height Control Time Between Calls, this will directly effect ...
 // ... the rate at which the Z axis moves, the machine must be restarted after changing this for it to take effect
@@ -60,31 +61,37 @@
 #define I2S_OUT_WS       GPIO_NUM_17
 #define I2S_OUT_DATA     GPIO_NUM_21
 
+///Axis Data 
+#define USE_GANGED_AXES // allow two motors on an axis
 
-#define STEPPER_X_MS3           I2SO(3)   // X_CS
+#define STEPPER_Z_MS3           I2SO(3)   // Z_CS
 #define STEPPER_Y_MS3           I2SO(6)   // Y_CS
-#define STEPPER_Z_MS3           I2SO(11)  // Z_CS
-//#define STEPPER_A_MS3           I2SO(14)  // A_CS
+#define STEPPER_X_MS3           I2SO(11)  // X_CS
+#define STEPPER_Y2_MS3           I2SO(14)  // Y2/A_CS
 //#define STEPPER_B_MS3           I2SO(19)  // B_CS
 //#define STEPPER_C_MS3           I2SO(22)  // C_CS
-
 #define STEPPER_RESET           GPIO_NUM_19
+//Terminal 1
+#define Z_DISABLE_PIN           I2SO(0)
+#define Z_DIRECTION_PIN         I2SO(1)
+#define Z_STEP_PIN              I2SO(2)
 
-#define X_DISABLE_PIN           I2SO(0)
-#define X_DIRECTION_PIN         I2SO(1)
-#define X_STEP_PIN              I2SO(2)
-
+//Y Is a Ganged Motor
+//#define Y_AXIS_SQUARING
+//Terminal 2
 #define Y_DIRECTION_PIN         I2SO(4)
 #define Y_STEP_PIN              I2SO(5)
 #define Y_DISABLE_PIN           I2SO(7)
+//Terminal 4
+#define Y2_DIRECTION_PIN         I2SO(12) //Motor A Dir
+#define Y2_STEP_PIN              I2SO(13) //Motor A Step
+#define Y2_DISABLE_PIN           I2SO(15) //Motor A Disable
 
-#define Z_DISABLE_PIN           I2SO(8)
-#define Z_DIRECTION_PIN         I2SO(9)
-#define Z_STEP_PIN              I2SO(10)
+///Terminal 3
+#define X_DISABLE_PIN           I2SO(8)
+#define X_DIRECTION_PIN         I2SO(9)
+#define X_STEP_PIN              I2SO(10)
 /* Bill Comment out these axis'
-#define A_DIRECTION_PIN         I2SO(12)
-#define A_STEP_PIN              I2SO(13)
-#define A_DISABLE_PIN           I2SO(15)
 
 #define B_DISABLE_PIN           I2SO(16)
 #define B_DIRECTION_PIN         I2SO(17)
@@ -94,57 +101,29 @@
 #define C_STEP_PIN              I2SO(21)
 #define C_DISABLE_PIN           I2SO(23)
 */
+///CNC Socket # 1 Opto Isolated
 #define X_LIMIT_PIN             GPIO_NUM_33
 #define Y_LIMIT_PIN             GPIO_NUM_32
 #define Z_LIMIT_PIN             GPIO_NUM_35
+#define PROBE_PIN               GPIO_NUM_34
 //#define A_LIMIT_PIN             GPIO_NUM_34
 //#define B_LIMIT_PIN             GPIO_NUM_39
 //#define C_LIMIT_PIN             GPIO_NUM_36
 
-#define PROBE_PIN               GPIO_NUM_34
-#define THC_VOLTAGE_PIN         GPIO_NUM_39
+///CNC Socket #2 THC Voltage
+#define THC_VOLTAGE_PIN         GPIO_NUM_36
 ///Resistance Values needed to determine arc voltage i.e. Vout = (Vs*R2)/(R1+R2)
 #define VOLTAGE_DIVIDER_R1      470 ///470K Ohms
 #define VOLTAGE_DIVIDER_R2      7.6 ///7.6K Ohms
 
 
-// 0-10v CNC Module in Socket #3
-// Control...Set PD001 to 1 if enable is connected 0 is panel should be used
-// Freq...Set PD002 to 0
-// Freq input...Set PD070 to 0 for 0-10V
-/*
-#define SPINDLE_TYPE            SPINDLE_TYPE_10V
-#define SPINDLE_OUTPUT_PIN      GPIO_NUM_26
-#define SPINDLE_FORWARD_PIN     GPIO_NUM_4
-#define SPINDLE_REVERSE_PIN     GPIO_NUM_16
-*/
-
-
-// Example 5V output CNC module in socket #3
-/*
-#define SPINDLE_TYPE            SPINDLE_TYPE_PWM
-#define SPINDLE_OUTPUT_PIN      GPIO_NUM_26
-#define SPINDLE_ENABLE_PIN      GPIO_NUM_4
-#define SPINDLE_DIR_PIN         GPIO_NUM_16
-#define COOLANT_MIST_PIN        GPIO_NUM_27
-*/
-
-
-// Example (4x) 5V Buffer Output on socket #5
+///CNC Socket # 3 Spindle Relay
 #define SPINDLE_TYPE            SPINDLE_TYPE_RELAY
-#define SPINDLE_OUTPUT_PIN      I2SO(24)
-#define SPINDLE_DIR_PIN         I2SO(25)
-#define COOLANT_MIST_PIN        I2SO(26)
-#define COOLANT_FLOOD_PIN       I2SO(27)
+#define SPINDLE_OUTPUT_PIN       GPIO_NUM_26
 
+///CNC Socket # 4 Plasma Torch Relay  AKA Coolant Flood Pin 
+#define COOLANT_FLOOD_PIN       GPIO_NUM_14
 
-/*
-// RS485 In socket #3
-#define SPINDLE_TYPE            SPINDLE_TYPE_HUANYANG // only one spindle at a time
-#define HUANYANG_TXD_PIN        GPIO_NUM_26
-#define HUANYANG_RTS_PIN        GPIO_NUM_4
-#define HUANYANG_RXD_PIN        GPIO_NUM_16
-*/
 void THCSyncTask(void* pvParameters); //Task called for Torch height controlled thats defined in torchHeightControl.cpp
 void THCVoltageTask(void* pvParameters); //Task called for Torch height controlled thats defined in torchHeightControl.cpp
 // === Default settings

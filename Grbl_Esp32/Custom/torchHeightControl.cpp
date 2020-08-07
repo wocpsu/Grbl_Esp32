@@ -32,27 +32,52 @@ unsigned long THCCounter = 0; //For debugging only
 unsigned long lastDebugPrintTimeMillis; //For debugging only, last time debug info was printed
 unsigned long arcOnTime; //milliseconds at which plasma arc was turned on
 bool thcRunning;
-int thcIterationMs = 10;
+//int numberIters = 50;
+int thcIterationMs = 4;
+int directionDownPinState = 1;
+int directionUpPinState = 0;
 float thcPinVoltage;
 float torchVoltage;
 float torchVoltageFiltered; ///Current filtered value used for THC routine
 float  voltageSetpoint;
 int32_t voltageInt;
+int currentDirectionState; ////get state of direction pin
+bool directionDifference;
 void thcStepZDown(){
 		if (thc_debug_setting->get() && ((millis() - lastDebugPrintTimeMillis) > thc_debugprint_millis->get()) )
 		{
             grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Setpoint = %4.1f THC Voltage = %4.1f Moving Z Down", voltageSetpoint, torchVoltageFiltered);
 		    lastDebugPrintTimeMillis = millis();
 		}
-        //Set Z Direction Pin
-        digitalWrite(Z_DIRECTION_PIN,0);  
-        delay_ms(STEP_PULSE_DELAY); ///Delay setting the step pin high
+		//Get Current Direction Pin State
+		currentDirectionState = digitalRead(Z_DIRECTION_PIN);
+		if(directionDownPinState == currentDirectionState)
+		{
+			directionDifference = false;
+		}
+		else
+		{
+			directionDifference = true;
+			//Set Z Direction Pin
+			digitalWrite(Z_DIRECTION_PIN,directionDownPinState);  
+            delay_ms(STEP_PULSE_DELAY); ///Delay setting the step pin high
+		}
+		for (int i = 1; i <= (thc_iter_freq -> get()); i++) {
+		if(i>1){delay_ms(pulse_microseconds->get());} //if this isn't the first pass then wait to pulse again
         //Pulse Z Step Pin High
         digitalWrite(Z_STEP_PIN,1);
         delay_ms(pulse_microseconds->get()); //Leave Step pin high for 10ms
         //Pulse Z Step Pin Low
-        digitalWrite(Z_STEP_PIN,0); 
-        sys_position[Z_AXIS]--;
+        digitalWrite(Z_STEP_PIN,0);  
+		//Break for loop if plasma has been turned off
+		uint8_t plasmaState = coolant_get_state(); //Using the coolant flood output to turn on the plasma cutter
+		if(!plasmaState) {break;}
+        //sys_position[Z_AXIS]--;
+		}
+		if(directionDifference)//if we wrote a different direction state than what the pin was at, then set it back
+		{
+			digitalWrite(Z_DIRECTION_PIN,!directionDownPinState);
+		}
 }
 
 void thcStepZUp(){
@@ -61,16 +86,36 @@ void thcStepZUp(){
             grbl_msg_sendf(CLIENT_ALL, MSG_LEVEL_INFO, "THC Setpoint = %4.1f THC Voltage = %4.1f Moving Z Up", voltageSetpoint, torchVoltageFiltered);
 		    lastDebugPrintTimeMillis = millis();
 		}
-        //Set Z Direction Pin
-        digitalWrite(Z_DIRECTION_PIN,1);  
-        delay_ms(STEP_PULSE_DELAY); ///Delay setting the step pin high
+        //Get Current Direction Pin State
+		currentDirectionState = digitalRead(Z_DIRECTION_PIN);
+		if(directionUpPinState == currentDirectionState)
+		{
+			directionDifference = false;
+		}
+		else
+		{
+			directionDifference = true;
+			//Set Z Direction Pin
+			digitalWrite(Z_DIRECTION_PIN,directionUpPinState);
+            delay_ms(STEP_PULSE_DELAY); ///Delay setting the step pin high  
+		} 
+		for (int i = 1; i <= (thc_iter_freq -> get()); i++) {
+		if(i>1){delay_ms(pulse_microseconds->get());} //if this isn't the first pass then wait to pulse again
         //Pulse Z Step Pin
         digitalWrite(Z_STEP_PIN,1);
         //Pulse Z Step Pin High
-        delay_ms(pulse_microseconds->get()); //Leave Step pin high for 10ms
-        digitalWrite(Z_STEP_PIN,0); 
+        delay_ms(pulse_microseconds->get()); //Leave Step pin high for 4ms
         //Pulse Z Step Pin Low
-        sys_position[Z_AXIS]++;
+        digitalWrite(Z_STEP_PIN,0); 
+		//Break for loop if plasma has been turned off
+		uint8_t plasmaState = coolant_get_state(); //Using the coolant flood output to turn on the plasma cutter
+		if(!plasmaState) {break;}
+        //sys_position[Z_AXIS]++;
+		}
+		if(directionDifference)//if we wrote a different direction state than what the pin was at, then set it back
+		{
+			digitalWrite(Z_DIRECTION_PIN,!directionUpPinState);
+		}
 
 }
 
@@ -99,7 +144,7 @@ void machine_init() {
 // this task is the main THC loop
 void THCSyncTask(void* pvParameters) {
     TickType_t xthcWakeTime;
-    const TickType_t xTHCFrequency = (thc_iter_freq -> get()); // in ticks (typically ms)
+    const TickType_t xTHCFrequency = thcIterationMs;//(thc_iter_freq -> get()); // in ticks (typically ms)
     xthcWakeTime = xTaskGetTickCount(); // Initialise the xthcWakeTime variable with the current time.
     while (true) { // don't ever return from this or the task dies
         //Get the state of the plasma cutter torch on relay
@@ -146,14 +191,14 @@ void THCSyncTask(void* pvParameters) {
         THCCounter ++;
 		voltageSetpoint = (thc_voltage_setting -> get());
 		
-        vTaskDelayUntil(&xthcWakeTime, (thc_iter_freq -> get())+ 1);
+        vTaskDelayUntil(&xthcWakeTime, thcIterationMs);//(thc_iter_freq -> get())+ 1);
     }
 }
 
 // this task is THC Voltage Filter Loop
 void THCVoltageTask(void* pvParameters) {
     TickType_t xLastVoltageWakeTime;
-    const TickType_t xTHCVoltageFrequency = 20; // in ticks (typically ms)
+    const TickType_t xTHCVoltageFrequency = 1; // in ticks (typically ms)
     xLastVoltageWakeTime = xTaskGetTickCount(); // Initialise the xLastVoltageWakeTime variable with the current time.
     while (true) {
         // don't ever return from this or the task dies
